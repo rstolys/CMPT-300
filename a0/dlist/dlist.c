@@ -1,12 +1,12 @@
 /*-----------------------------------------------------------------------------
- * list.c -- Functions for linked listed
+ * dlist.c -- Functions for doubly linked listed
  *
  * 15 Jan 2021	Ryan Stolys
  *
  -----------------------------------------------------------------------------*/
 
 /***INCLUDES******************************************************************/
-#include "list.h"
+#include "dlist.h"
 #include <stdio.h>
 #include <stdlib.h>     //For malloc
 
@@ -18,7 +18,7 @@
 
 
 /***FUNCTION DECLARATIONS*****************************************************/
-//LOCATED IN list.h
+//LOCATED IN dlist.h
 
 
 /***FUNCTION DEFINITIONS******************************************************/
@@ -36,7 +36,8 @@ struct nodeStruct* List_createNode(int newItem)
 
     //Set the item of the node to newItem
     node->item = newItem;       //Set the item to the newItem value
-    node->next = NULL;          //Set the pointer to the next element to NULL
+    node->previous = NULL;      //Set the previous pointer to NULL
+    node->next = NULL;          //Set the next pointer to NULL
         
     return node;
     }
@@ -46,7 +47,13 @@ struct nodeStruct* List_createNode(int newItem)
  */
 void List_insertHead(struct nodeStruct **headRef, struct nodeStruct *node)
     {
-    //Set the node next parameter to the head element of the linked list
+    //Set the previous pointer of the old head to our new node
+    if(*headRef != NULL)
+        (*headRef)->previous = node;
+
+
+    //Set the next and previous nodes of the new head node
+    node->previous = NULL; 
     node->next = (*headRef); 
 
     //Set the head reference to the new head of the list 
@@ -54,6 +61,7 @@ void List_insertHead(struct nodeStruct **headRef, struct nodeStruct *node)
 
     return;
     }
+
 
 /*
  * Insert node at tail of list
@@ -68,11 +76,16 @@ void List_insertTail(struct nodeStruct **headRef, struct nodeStruct *node)
         tempNode = tempNode->next;
         }
 
-    //Assign the final element in the list to the new final element
+    //Assign the old tail next pointer in the list to the new tail
     tempNode->next = node;
+
+    //Assign the pointers of our new tail 
+    node->previous = tempNode;
+    node->next = NULL;
 
     return;
     }
+
 
 /*
  * Count number of node in the list
@@ -89,7 +102,6 @@ int List_countNodes(struct nodeStruct *head)
         numNodes++;
         }
     
-
     return numNodes;
     }
 
@@ -114,37 +126,41 @@ struct nodeStruct* List_findNode(struct nodeStruct *head, int item)
  * This function assumes that node has been properly set to a valid node
  * in the list. For example, the client code may have found it by calling 
  * List_findNode(). If the list contains only one node, the head of the list
- * should be et to NULL.
+ * should be set to NULL.
  */
 void List_deleteNode(struct nodeStruct **headRef, struct nodeStruct *node)
     {
-    struct nodeStruct* previousNode = NULL;
     struct nodeStruct* currentNode = *headRef;
 
     //NOTE: based on funtion description we are supposed to find the node 
     //  but NULL condition is included in case error is made to avoid crash
     while(currentNode != NULL && currentNode->item != node->item)
         {
-        previousNode = currentNode;             //Set the previous node to the current one
         currentNode = currentNode->next;        //Move to next node to continue search
         }
     
-    //This means we found the node and can free it 
+    //We found the node and can free it 
     if(currentNode != NULL)
         {
-        if(previousNode == NULL)        //Then the node found was the head
+        if(currentNode->previous == NULL)        //Then the node found was the head
             {
             (*headRef) = currentNode->next;     //Will be NULL if only 1 element in list or next element
+            currentNode->previous = NULL;       //Set the previous pointer to null since it is new head
             }
         else 
             {
-            previousNode->next = currentNode->next;     //Set previous node to the next node (removed currentNode from list)
+            //Set next and previous pointers of elements next to deleted node
+            currentNode->previous->next = currentNode->next;
+
+            //If this is the tail then there is no next node
+            if(currentNode->next != NULL)
+                currentNode->next->previous = currentNode->previous;
             }
 
         //Free the memory pointer to by the currentNode
         free(currentNode);
         }
-    
+
     return;
     }
 
@@ -177,10 +193,14 @@ void List_sort(struct nodeStruct **headRef)
             currentNode = currentNode->next;        //Move to next node in sequence
             }
         }
-    
+
     return;
     }
 
+
+/****************************************************************
+ * NON_REQUIED FUNCTIONS
+ ****************************************************************/
 
 /*
  * Will delete all element of the list and free associated memory.
@@ -225,6 +245,6 @@ void List_print(struct nodeStruct *head)
         {
         printf("List has zero items\n\n");
         }
-
+        
     return;
     }

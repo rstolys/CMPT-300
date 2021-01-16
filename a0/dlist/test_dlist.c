@@ -1,12 +1,12 @@
 /*-----------------------------------------------------------------------------
- * test_list.c -- Test program for linked listed
+ * test_dlist.c -- Test program for doubly linked listed
  *
  * 15 Jan 2021	Ryan Stolys
  *
  -----------------------------------------------------------------------------*/
 
 /***INCLUDES******************************************************************/
-#include "list.h"
+#include "dlist.h"
 #include <assert.h>
 #include <sys/types.h>
 #include <string.h>
@@ -28,6 +28,7 @@
 
 /***FUNCTION DEFINITIONS******************************************************/
 
+
 ///////////////////////////////////////////////////////////////////
 /// providedTests-- test program provided in assignment sheet
 ///
@@ -42,6 +43,7 @@ int providedTests(int argc, char **argv)
 
 	// Starting count:
 	assert(List_countNodes(head) == 0);
+
 
 	// Create 1 node:
 	struct nodeStruct* firstNode = List_createNode(0);
@@ -58,6 +60,7 @@ int providedTests(int argc, char **argv)
 	assert(List_findNode(head, -5) == lastNode);
 	assert(List_findNode(head, 1) == NULL);
 
+
 	// Verify list:
 	struct nodeStruct *current = head;
 	assert(current->item == 0);
@@ -65,6 +68,7 @@ int providedTests(int argc, char **argv)
 	current = current->next;
 	assert(current->item == -5);
 	assert(current->next == NULL);
+
 
 	// Sort and verify:
 	List_sort(&head);
@@ -74,6 +78,7 @@ int providedTests(int argc, char **argv)
 	current = current->next;
 	assert(current->item == 0);
 	assert(current->next == NULL);
+
 
 	// Delete
 	assert(List_countNodes(head) == 2);
@@ -88,7 +93,7 @@ int providedTests(int argc, char **argv)
 
 
 	printf("\nExecution finished.\n");
-	return 0;
+    return SUCCESS;
     }
 
 

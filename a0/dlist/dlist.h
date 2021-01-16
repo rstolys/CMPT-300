@@ -1,12 +1,12 @@
 /*-----------------------------------------------------------------------------
- * list.h -- Function Declarations for linked list
+ * dlist.h -- Function Declarations for doubly linked list
  *
- * 15 Jan 2021	Ryan Stolys
+ * 16 Jan 2021	Ryan Stolys
  *
  -----------------------------------------------------------------------------*/
 
-#ifndef LIST_H   
-#define LIST_H
+#ifndef List_H   
+#define List_H
 
 /***INCLUDES******************************************************************/
 //NONE
@@ -19,6 +19,7 @@
 struct nodeStruct 
     {
     int item;
+    struct nodeStruct *previous;
     struct nodeStruct *next;
     };
 
