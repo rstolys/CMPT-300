@@ -113,13 +113,13 @@ int mystrcmp(const char *s1, const char *s2)
 
     //Determine return value 
     if(sameString)
-        rv = 0; 
+        {rv = 0;}
     else if(s1Val > s2Val)
-        rv = 1;
+       	{rv = 1;}
     else            //NOTE: this means that if we have different strings with the same UNIX sum then we return -1
-        rv = -1;
-    
-	return rv;
+       	{rv = -1;}
+
+    return rv;
     }
 
 /*
