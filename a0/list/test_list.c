@@ -85,6 +85,10 @@ int providedTests(int argc, char **argv)
 	current = head;
 	assert(current->item == -5);
 	assert(current->next == NULL);
+	
+	List_deleteNode(&head, List_findNode(head, -5));
+	assert(head == NULL);
+	assert(List_countNodes(head) == 0);
 
 
 	printf("\nExecution finished.\n");
