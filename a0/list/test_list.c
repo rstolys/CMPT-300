@@ -101,32 +101,28 @@ int providedTests(int argc, char **argv)
 ///////////////////////////////////////////////////////////////////
 int myTests(int argc, char **argv)
     {
-    int listSize = 0;
-
     //Reference to the Reference of our list
     struct nodeStruct** listRef = (struct nodeStruct**) malloc(sizeof(struct nodeStruct*)); 
 
     //Create a node for our list
-    struct nodeStruct* node = List_createNode(5);
+    struct nodeStruct* node_5 = List_createNode(5);
 
     //Verify the value provided is correct
-    assert(node->item == 5);
+    assert(node_5->item == 5);
 
     //Create a reference to the head of the list
-    (*listRef) = node;
-    listSize++;
+    (*listRef) = node_5;
 
     //Verify the list head was constructed properly
     assert(((*listRef)->item) == 5);
 
 
     //Create List of length 3
-    struct nodeStruct* node2 = List_createNode(7);
-    struct nodeStruct* node1 = List_createNode(2);
+    struct nodeStruct* node_7 = List_createNode(7);
+    struct nodeStruct* node_2 = List_createNode(2);
 
-    List_insertHead(listRef, node2);
-    List_insertHead(listRef, node1);
-    listSize += 2;
+    List_insertHead(listRef, node_7);
+    List_insertHead(listRef, node_2);
 
     //Verify list creation 
     assert((*listRef)->item == 2);
@@ -135,8 +131,8 @@ int myTests(int argc, char **argv)
 
 
     //Add another node to the tail 
-    struct nodeStruct* node4 = List_createNode(10);
-    List_insertTail(listRef, node4);
+    struct nodeStruct* node_10 = List_createNode(10);
+    List_insertTail(listRef, node_10);
 
     //Verfiy node was added properly
     assert((*listRef)->next->next->next->item == 10);
@@ -147,8 +143,8 @@ int myTests(int argc, char **argv)
 
 
     //Test finding a specific node and looking for node that doesnt exist
-    assert(List_findNode(*listRef, 5) == node);
-    assert(List_findNode(*listRef, 10) == node4);
+    assert(List_findNode(*listRef, 5) == node_5);
+    assert(List_findNode(*listRef, 10) == node_10);
     assert(List_findNode(*listRef, 1) == NULL);
 
     List_print(*listRef);
@@ -168,7 +164,6 @@ int myTests(int argc, char **argv)
     List_print(*listRef);
 
 
-
     //
     //Free Memory
     //
@@ -176,8 +171,6 @@ int myTests(int argc, char **argv)
 
     if(listRef != NULL)
         free(listRef);
-
-
 
     printf("Passed all tests\n");
 

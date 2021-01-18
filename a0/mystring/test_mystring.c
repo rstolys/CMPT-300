@@ -27,6 +27,9 @@ int main()
 
     assert(mystrcmp ("I love coding", "I love coding") == 0);
 	assert(mystrcmp ("I love coding", "I love codingtest") == -1);
+    assert(mystrcmp ("I love coding", "I love codin") == 1);
+    assert(mystrcmp ("I love coding", "") == 1);
+    assert(mystrcmp ("", "") == 0);
 
 
     char *dupStr = mystrdup(buffer);
@@ -35,7 +38,6 @@ int main()
 
 	if (dupStr != NULL)
 		free (dupStr);
-
 
 	char *dupStr2 = mystrdup(NULL);
 	assert (dupStr2 == NULL);
