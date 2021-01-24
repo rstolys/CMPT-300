@@ -10,7 +10,7 @@
  * You should develop more extensive tests to try and find bugs.
  */
 int main()
-{
+    {
 	const int SIZE = 100;
 	char buffer[SIZE];
 
@@ -29,21 +29,30 @@ int main()
 	assert(mystrcmp ("I love coding", "I love codingtest") == -1);
     assert(mystrcmp ("I love coding", "I love codin") == 1);
     assert(mystrcmp ("I love coding", "") == 1);
+    assert(mystrcmp ("", "I love coding") == -1);
     assert(mystrcmp ("", "") == 0);
 
 
     char *dupStr = mystrdup(buffer);
+    assert (!mystrcmp(buffer, dupStr));
 	assert (!strcmp(buffer, dupStr));
 	assert (buffer != dupStr);
 
 	if (dupStr != NULL)
 		free (dupStr);
 
+
+    buffer[0] = '\0';
+    char *dupStr3 = mystrdup(buffer);
+    assert (!mystrcmp(buffer, dupStr3));
+	assert (!strcmp(buffer, dupStr3));
+
+
 	char *dupStr2 = mystrdup(NULL);
-	assert (dupStr2 == NULL);
+    assert (!mystrcmp(NULL, dupStr2));
 
 	printf ("\nPassed all tests\n");
 
 	return 0;
-}
+    }
 

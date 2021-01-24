@@ -29,15 +29,18 @@
  **/
 struct nodeStruct* List_createNode(int newItem)
     {
-    struct nodeStruct* node; 
+    struct nodeStruct* node = NULL; 
 
     //Allocate memory for next node of size nodeStruct
     node = (struct nodeStruct*) malloc(sizeof(struct nodeStruct));
 
-    //Set the item of the node to newItem
-    node->item = newItem;       //Set the item to the newItem value
-    node->next = NULL;          //Set the pointer to the next element to NULL
-        
+    if(node != NULL)
+        {
+        //Set the item of the node to newItem
+        node->item = newItem;       //Set the item to the newItem value
+        node->next = NULL;          //Set the pointer to the next element to NULL
+        }
+
     return node;
     }
 

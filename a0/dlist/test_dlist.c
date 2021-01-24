@@ -110,8 +110,6 @@ int providedTests(int argc, char **argv)
 ///////////////////////////////////////////////////////////////////
 int myTests(int argc, char **argv)
     {
-    int listSize = 0;
-
     //Reference to the Reference of our list
     struct nodeStruct** listRef = (struct nodeStruct**) malloc(sizeof(struct nodeStruct*)); 
 
@@ -123,7 +121,6 @@ int myTests(int argc, char **argv)
 
     //Create a reference to the head of the list
     (*listRef) = node;
-    listSize++;
 
     //Verify the list head was constructed properly
     assert(((*listRef)->item) == 5);
@@ -135,12 +132,13 @@ int myTests(int argc, char **argv)
 
     List_insertHead(listRef, node2);
     List_insertHead(listRef, node1);
-    listSize += 2;
 
     //Verify list creation 
     assert((*listRef)->item == 2);
     assert((*listRef)->next->item == 7);
+    assert((*listRef)->next->previous->item == 2);
     assert((*listRef)->next->next->item == 5);
+    assert((*listRef)->next->next->previous->item == 7);
 
 
     //Add another node to the tail 
@@ -168,6 +166,12 @@ int myTests(int argc, char **argv)
     List_print(*listRef);
     printf("\n\n\n");
 
+    assert((*listRef)->item == 2);
+    assert((*listRef)->next->item == 5);
+    assert((*listRef)->next->previous->item == 2);
+    assert((*listRef)->next->next->item == 7);
+    assert((*listRef)->next->next->previous->item == 5);
+
 
     //Test deletion of node
     List_deleteNode(listRef, List_findNode(*listRef, 5));
@@ -175,8 +179,6 @@ int myTests(int argc, char **argv)
     assert(List_countNodes(*listRef) == 3);
 
     List_print(*listRef);
-
-
 
     //
     //Free Memory
