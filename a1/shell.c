@@ -561,8 +561,8 @@ void getCommandString(char* cmd, char* tokens[], _Bool in_bkgnd)
 ********************************************************************/
 void displayCmd_Prompt()
     {
-    char cur_wd[COMMAND_LENGTH];
-    char cmd_prompt[COMMAND_LENGTH + 2];
+    char cur_wd[COMMAND_LENGTH] = "\0";
+    char cmd_prompt[COMMAND_LENGTH + 2] = "\0";
     getcwd(cur_wd, COMMAND_LENGTH);
     sprintf(cmd_prompt, "%s $ ", cur_wd);
     myWrite(STDOUT_FILENO, cmd_prompt);
