@@ -14,6 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <pwd.h>
 
 
@@ -229,7 +230,7 @@ void handleCmd_exit(char *tokens[])
         {
         myWrite(STDOUT_FILENO, "The 'exit' command does not support any arguments.\n");
         }
-    
+
     return;
     }
 
@@ -244,8 +245,8 @@ void handleCmd_pwd(char *tokens[])
     {
     if(tokens[1] == NULL)
         {
-        char wd[100];
-        getcwd(wd, 100);
+        char wd[COMMAND_LENGTH - 50];
+        getcwd(wd, COMMAND_LENGTH - 50);
         char msg[COMMAND_LENGTH];
         sprintf(msg, "The current working directory is: %s\n", wd);
 
@@ -373,7 +374,7 @@ void handleCmd_help(char *tokens[])
             }
         else 
             {
-            char buf[100]; 
+            char buf[COMMAND_LENGTH]; 
             sprintf(buf, "%s is an external command or application\n", tokens[1]);
 
             myWrite(STDOUT_FILENO, buf);
