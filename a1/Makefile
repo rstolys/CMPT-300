@@ -4,10 +4,9 @@
 # Define what compiler to use and the flags.
 CC=cc
 CXX=CC
-#CCFLAGS= -g -std=c99 -Wall -Werror
 CCFLAGS= -g -std=c99 -D_POSIX_C_SOURCE=200809L -Wall -Werror
 
-all: shell test
+all: shell
 
 # Compile all .c files into .o files
 # % matches all (like * in a command)

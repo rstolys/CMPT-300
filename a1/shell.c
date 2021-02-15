@@ -392,8 +392,8 @@ void handleCmd_help(char *tokens[])
 ********************************************************************/
 void handleCtrl_C()
     {
-    //myWrite(STDOUT_FILENO, "\n'help' is an builtin command for obtaining information about the supported commands.\n");
-    myWrite(STDOUT_FILENO, "\nThe 'help' command requires one argument. Supported commands are: 'exit', 'pwd' and 'cd'.\n");
+//    myWrite(STDOUT_FILENO, "\n'help' is an builtin command for obtaining information about the supported commands.\n");
+	myWrite(STDOUT_FILENO, "\nThe 'help' command requires one argument. Supported commands are: 'exit', 'pwd' and 'cd'.\n");
 
     //displayCmd_Prompt(); //-- does this need to be printed? Will be printed already on its own
 
@@ -480,8 +480,15 @@ int addCmdToHistory(int* numCmds, struct hist_element* hist, char *tokens[], cha
         //Check if command requested is the print command
         if(strcmp(tokens[0], HISTORY_CMD) == 0)
             {
-            printHistory(*numCmds, hist);
-            rc = 0;         //We have handled command
+		if(tokens[1] != NULL)
+			{
+			myWrite(STDOUT_FILENO, "The 'history' command does not support any arguements.\n");
+			}
+		else 
+			{
+			printHistory(*numCmds, hist);
+			}
+		rc = 0;		//We have handled command
             }
         }
     else 
