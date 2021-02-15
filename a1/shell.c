@@ -687,17 +687,6 @@ int main(int argc, char **argv)
     }
 
 
-/**
- * Steps For Basic Shell:
- * 1. Fork a child process
- * 2. Child process invokes execvp() using results in token array.
- * 3. If in_background is false, parent waits for
- *    child to finish. Otherwise, parent loops back to
- *    read_command() again immediately.
- */
-
-
-
 /*******************************************************************
 ** myWrite -- will print message to screen
 **
