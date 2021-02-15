@@ -392,7 +392,8 @@ void handleCmd_help(char *tokens[])
 ********************************************************************/
 void handleCtrl_C()
     {
-    myWrite(STDOUT_FILENO, "\n'help' is an builtin command for obtaining information about the supported commands.\n");
+    //myWrite(STDOUT_FILENO, "\n'help' is an builtin command for obtaining information about the supported commands.\n");
+    myWrite(STDOUT_FILENO, "\nThe 'help' command requires one argument. Supported commands are: 'exit', 'pwd' and 'cd'.\n");
 
     //displayCmd_Prompt(); //-- does this need to be printed? Will be printed already on its own
 
@@ -563,7 +564,7 @@ void getCommandString(char* cmd, char* tokens[], _Bool in_bkgnd)
 void displayCmd_Prompt()
     {
     char cur_wd[COMMAND_LENGTH] = "\0";
-    char cmd_prompt[COMMAND_LENGTH + 2] = "\0";
+    char cmd_prompt[COMMAND_LENGTH + 4] = "\0";
     getcwd(cur_wd, COMMAND_LENGTH);
     sprintf(cmd_prompt, "%s $ ", cur_wd);
     myWrite(STDOUT_FILENO, cmd_prompt);
