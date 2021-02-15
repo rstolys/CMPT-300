@@ -392,7 +392,7 @@ void handleCmd_help(char *tokens[])
 ********************************************************************/
 void handleCtrl_C()
     {
-//    myWrite(STDOUT_FILENO, "\n'help' is an builtin command for obtaining information about the supported commands.\n");
+    //myWrite(STDOUT_FILENO, "\n'help' is an builtin command for obtaining information about the supported commands.\n");
 	myWrite(STDOUT_FILENO, "\nThe 'help' command requires one argument. Supported commands are: 'exit', 'pwd' and 'cd'.\n");
 
     //displayCmd_Prompt(); //-- does this need to be printed? Will be printed already on its own
