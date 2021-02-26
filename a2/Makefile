@@ -22,7 +22,7 @@ candykids: bbuff.o stats.o candykids.o
 
 # run program
 test: candykids
-	./candykids
+	./candykids 3 1 10
 
 clean:
 	rm -f core *.o candykids

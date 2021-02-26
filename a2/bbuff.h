@@ -9,13 +9,23 @@
 #define BBUFF_H 
 
 /***INCLUDES******************************************************************/
-//NONE
+#include <stdbool.h>
 
 /***DEFINES*******************************************************************/
 //NONE
 
 /***GLOBAL VARIABLES**********************************************************/
 
+
+
+
+void bbuff_init(void);
+
+void bbuff_blocking_insert(void* item);
+
+void* bbuff_blocking_extract(void);
+
+_Bool bbuff_is_empty(void);
 
 
 #endif /*BBUFF_H*/
