@@ -2,10 +2,10 @@
 ## Check Unix Programming Tools handout for more info.
 
 # Define what compiler to use and the flags.
-CC=cc
+CC=cc -pthread
 CXX=CC
-CCFLAGS= -g -std=c99 -Wall -Werror
-#CCFLAGS= -g -std=c99 -D_POSIX_C_SOURCE=200809L -Wall -Werror
+#CCFLAGS= -g -std=c99 -Wall -Werror -lrt
+CCFLAGS= -g -std=c99 -D_POSIX_C_SOURCE=200809L -Wall -Werror
 
 all: candykids test
 
