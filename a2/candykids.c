@@ -13,6 +13,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "bbuff.h"
 #include "stats.h"
@@ -27,11 +28,12 @@
 //#define DEBUG
 
 /***GLOBAL VARIABLES**********************************************************/
-
 typedef struct {
     int factory_number;
     double creation_ts_ms;
 } candy_t;
+
+_Bool generateCandy = false;
 
 /***FUNCTION DECLARATIONS*****************************************************/
 
@@ -53,6 +55,25 @@ double current_time_in_ms(void);
 ********************************************************************/
 void* factory(void* factory_id)
     {
+    srand(time(NULL));   // Initialize rand function
+    int factNum = *((int*)factory_id);
+
+    while(generateCandy)
+        {
+        //Create candy
+        candy_t* newCandy = malloc(sizeof(candy_t));
+        newCandy->factory_number = factNum;
+        newCandy->creation_ts_ms = current_time_in_ms();
+
+        //Insert to buffer
+        bbuff_blocking_insert(newCandy);
+
+        //Record insertion
+        stats_record_produced(factNum);
+
+        sleep(rand() % 4);   //sleep for 0 to 3 seconds        
+        }
+
     return NULL;
     }
 
@@ -65,7 +86,33 @@ void* factory(void* factory_id)
 ********************************************************************/
 void* kid(void* param)
     {
-    return NULL;
+    srand(time(NULL));   // Initialize rand function
+    candy_t* candy = NULL;
+    double start;
+    double end;
+
+    while(true)
+        {
+        //Get candy
+        printf("Getting Candy!\n");
+        start = current_time_in_ms();
+        candy = (candy_t*) bbuff_blocking_extract();
+        end = current_time_in_ms();
+        printf("Done with getting Candy!\n");
+
+        if(candy != NULL)
+            {
+            //Record candy consumption
+            stats_record_consumed(candy->factory_number, (end - start));
+
+            free(candy);
+            candy = NULL;
+            }
+
+        sleep(rand() % 2);   //sleep for 0 to 1 seconds  
+        }
+    
+    pthread_exit(NULL);
     }
 
 
@@ -90,7 +137,7 @@ int main(int argc, char **argv)
     //
     // Extract Agruments
     //
-    if(argc < 3 || argc > 4)
+    if(argc <= 3 || argc > 4)
         {
         //Print error message
         printf("You provided %d arguements. We require 4\n", argc);
@@ -115,6 +162,7 @@ int main(int argc, char **argv)
     //
     bbuff_init();
     stats_init(factories);
+    generateCandy = true;     //Set global variable to indicate to threads to keep working
 
 
     //
@@ -179,11 +227,8 @@ int main(int argc, char **argv)
     // Stop cody-factory threads
     //
     //Tell them to stop then join them back to main thread
-    for(int f = 0; f < factories; f++)
-        {
-        pthread_cancel(factThread_id[f]);
-        }
-
+    printf("Stopping Factories\n");
+    generateCandy = false;        //Indicate to threads to stop their processing
     for(int f = 0; f < factories; f++)
         {
         pthread_join(factThread_id[f], NULL);
@@ -193,6 +238,7 @@ int main(int argc, char **argv)
     //
     // Wait until no more candy
     //
+    printf("Waiting for buffer to empty\n");
     while(!bbuff_is_empty()) {/*Wait for kids to eat*/}
 
 
@@ -200,13 +246,17 @@ int main(int argc, char **argv)
     // Stop kid threads
     //
     //Cancel thread execution then join them back to main thread
+    printf("Stopping Kids\n");
     for(int f = 0; f < kids; f++)
         {
+        printf("Cancelling Kid %d\n", f);
         pthread_cancel(kidThread_id[f]);
         }
 
+    printf("Joining Kids\n");
     for(int f = 0; f < kids; f++)
         {
+        printf("Joining Kid %d\n", f);
         pthread_join(kidThread_id[f], NULL);
         }
 
@@ -214,6 +264,7 @@ int main(int argc, char **argv)
     //
     // Print stats
     //
+    printf("Printing Stats\n");
     stats_display();
 
 
@@ -251,10 +302,10 @@ void myWrite(int fd, char* buf)
 ** @param[in]  none
 **
 ********************************************************************/
-//double current_time_in_ms(void)
-//    {
-//    struct timespec now;
-//    clock_gettime(CLOCK_REALTIME, &now);
-//    return now.tv_sec * 1000.0 + now.tv_nsec/1000000.0;
-//    }
+double current_time_in_ms(void)
+   {
+   struct timespec now;
+   clock_gettime(CLOCK_REALTIME, &now);
+   return now.tv_sec * 1000.0 + now.tv_nsec/1000000.0;
+   }
 
