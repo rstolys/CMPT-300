@@ -88,22 +88,24 @@ void* kid(void* param)
     {
     srand(time(NULL));   // Initialize rand function
     candy_t* candy = NULL;
-    double start;
-    double end;
+    double tConsumed;
+
+    // Allow kid thread to be cancelled at any time
+    int cancelType;
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &cancelType);
 
     while(true)
         {
         //Get candy
         printf("Getting Candy!\n");
-        start = current_time_in_ms();
         candy = (candy_t*) bbuff_blocking_extract();
-        end = current_time_in_ms();
+        tConsumed = current_time_in_ms();
         printf("Done with getting Candy!\n");
 
         if(candy != NULL)
             {
             //Record candy consumption
-            stats_record_consumed(candy->factory_number, (end - start));
+            stats_record_consumed(candy->factory_number, (tConsumed - candy->creation_ts_ms));
 
             free(candy);
             candy = NULL;
@@ -247,11 +249,14 @@ int main(int argc, char **argv)
     //
     //Cancel thread execution then join them back to main thread
     printf("Stopping Kids\n");
+    int ret = 0;
     for(int f = 0; f < kids; f++)
         {
         printf("Cancelling Kid %d\n", f);
-        pthread_cancel(kidThread_id[f]);
+        ret = pthread_cancel(kidThread_id[f]);
         }
+
+    printf("%d\n", ret);
 
     printf("Joining Kids\n");
     for(int f = 0; f < kids; f++)
@@ -279,22 +284,6 @@ int main(int argc, char **argv)
     return SUCCESS;
     }
 
-
-/*******************************************************************
-** myWrite -- will print message to screen
-**
-** @param[in]  fd       file descriptor to write to
-** @param[in]  buf      the character array to be printed
-**
-********************************************************************/
-/*
-void myWrite(int fd, char* buf) 
-    {
-    write(fd, buf, strlen(buf));
-
-    return;
-    }
-*/
 
 /*******************************************************************
 ** current_time_in_ms -- will print message to screen

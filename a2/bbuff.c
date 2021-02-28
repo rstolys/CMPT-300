@@ -18,7 +18,7 @@
 
 
 /***DEFINES*******************************************************************/
-#define BUFFER_SIZE 10
+#define BUFFER_SIZE 1000
 
 
 /***GLOBAL VARIABLES**********************************************************/
@@ -114,7 +114,10 @@ void* bbuff_blocking_extract(void)
 
     while(true)
         {
-        while(buffer.candyInBuf == 0) {/*Wait for buffer to fill up*/}
+        while(buffer.candyInBuf == 0)
+            {
+            /*Wait for buffer to fill up but ensure the thread can be cancelled at this time*/
+            }
 
         // get access to buffer mutex
         pthread_mutex_lock(&mutex);

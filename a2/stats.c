@@ -22,6 +22,7 @@
 #define AVG_DELAY       "Avg Delay[ms]"
 #define MAX_DELAY       "Max Delay[ms]"
 
+
 /***GLOBAL VARIABLES**********************************************************/
 struct data_t {
     int made;
@@ -68,7 +69,6 @@ void stats_init(int num_producers)
         stats[f].minDelay = 1000000000.0;
         }
 
-    
     return;
     }
 
@@ -87,7 +87,7 @@ void stats_cleanup(void)
 
 
 /*******************************************************************
-** stats_record_produced -- ??
+** stats_record_produced -- Record number of candies produced per factory
 **
 ** @param[in]  
 **
@@ -101,7 +101,7 @@ void stats_record_produced(int factory_number)
 
 
 /*******************************************************************
-** stats_record_consumed -- ??
+** stats_record_consumed -- Record the number of candies consumed per factory
 **
 ** @param[in]  
 **
@@ -112,12 +112,14 @@ void stats_record_consumed(int factory_number, double delay_in_ms)
     stats[factory_number].eaten++; 
     stats[factory_number].totalDelay += delay_in_ms;
 
-    //Determine if this delay was a min or max delay 
+    //Determine if this delay was a new min delay
     if(stats[factory_number].minDelay > delay_in_ms)
         {
         stats[factory_number].minDelay = delay_in_ms;
         }
-    else if(stats[factory_number].maxDelay < delay_in_ms)
+
+    // Determine if this delay was a new max delay
+    if(stats[factory_number].maxDelay < delay_in_ms)
         {
         stats[factory_number].maxDelay = delay_in_ms;
         }
@@ -127,7 +129,7 @@ void stats_record_consumed(int factory_number, double delay_in_ms)
 
 
 /*******************************************************************
-** stats_display -- ??
+** stats_display -- Display candy statistics per factory
 **
 ** @param[in]  
 **
@@ -140,7 +142,15 @@ void stats_display(void)
     for(int f = 0; f < numFactories; f++)
         {
         double avgDelay = stats[f].totalDelay / (double) stats[f].eaten;
-        printf("%8d%7d%8d%15.5f%15.5f%15.5f\n", f, stats[f].made, stats[f].eaten, stats[f].minDelay, avgDelay, stats[f].maxDelay);
+        printf("%8d%7d%8d%15.5f%15.5f%15.5f", f, stats[f].made, stats[f].eaten, stats[f].minDelay, avgDelay, stats[f].maxDelay);
+
+        // Display error if candies made not equal candies eaten
+        if(stats[f].made != stats[f].eaten)
+            {
+            printf("\t\tError: Mismatch between number made and number eaten");
+            }
+
+        printf("\n");
         }
 
     return;
