@@ -97,10 +97,10 @@ void* kid(void* param)
     while(true)
         {
         //Get candy
-        printf("Getting Candy!\n");
+        //printf("Getting Candy!\n");
         candy = (candy_t*) bbuff_blocking_extract();
         tConsumed = current_time_in_ms();
-        printf("Done with getting Candy!\n");
+        //printf("Done with getting Candy!\n");
 
         if(candy != NULL)
             {
@@ -278,6 +278,7 @@ int main(int argc, char **argv)
     //
     stats_cleanup();
     free(factThread_id);
+    free(factory_num);
     free(kidThread_id);
 
 
