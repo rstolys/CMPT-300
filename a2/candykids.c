@@ -27,6 +27,7 @@
 //For debugging 
 //#define DEBUG
 
+
 /***GLOBAL VARIABLES**********************************************************/
 typedef struct {
     int factory_number;
@@ -35,15 +36,14 @@ typedef struct {
 
 _Bool generateCandy = false;
 
-/***FUNCTION DECLARATIONS*****************************************************/
 
+/***FUNCTION DECLARATIONS*****************************************************/
 void* factory(void* factory_id);
 
 void* kid(void* param);
 
-void myWrite(int fd, char* buf);
-
 double current_time_in_ms(void);
+
 
 /***FUNCTION DEFINITIONS******************************************************/
 
@@ -97,10 +97,8 @@ void* kid(void* param)
     while(true)
         {
         //Get candy
-        //printf("Getting Candy!\n");
         candy = (candy_t*) bbuff_blocking_extract();
         tConsumed = current_time_in_ms();
-        //printf("Done with getting Candy!\n");
 
         if(candy != NULL)
             {
@@ -229,7 +227,6 @@ int main(int argc, char **argv)
     // Stop cody-factory threads
     //
     //Tell them to stop then join them back to main thread
-//    printf("Stopping Factories\n");
     generateCandy = false;        //Indicate to threads to stop their processing
     for(int f = 0; f < factories; f++)
         {
@@ -240,7 +237,6 @@ int main(int argc, char **argv)
     //
     // Wait until no more candy
     //
-  //  printf("Waiting for buffer to empty\n");
     while(!bbuff_is_empty()) {/*Wait for kids to eat*/}
 
 
@@ -248,20 +244,13 @@ int main(int argc, char **argv)
     // Stop kid threads
     //
     //Cancel thread execution then join them back to main thread
-   // printf("Stopping Kids\n");
-    //int ret = 0;
     for(int f = 0; f < kids; f++)
         {
-     //   printf("Cancelling Kid %d\n", f);
         pthread_cancel(kidThread_id[f]);
         }
 
-  //  printf("%d\n", ret);
-
-    //printf("Joining Kids\n");
     for(int f = 0; f < kids; f++)
         {
-     //   printf("Joining Kid %d\n", f);
         pthread_join(kidThread_id[f], NULL);
         }
 
@@ -269,7 +258,6 @@ int main(int argc, char **argv)
     //
     // Print stats
     //
-   // printf("Printing Stats\n");
     stats_display();
 
 
