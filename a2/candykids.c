@@ -95,11 +95,16 @@ void* kid(void* param)
     while(true)
         {
         //Get candy
+#ifdef DEBUG
         printf("Getting Candy!\n");
+#endif
         candy = (candy_t*) bbuff_blocking_extract();
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldCancelType);
         tConsumed = current_time_in_ms();
+
+#ifdef DEBUG
         printf("Done with getting Candy!\n");
+#endif
 
         if(candy != NULL)
             {
@@ -230,7 +235,9 @@ int main(int argc, char **argv)
     // Stop cody-factory threads
     //
     //Tell them to stop then join them back to main thread
+#ifdef DEBUG
     printf("Stopping Factories\n");
+#endif
     generateCandy = false;        //Indicate to threads to stop their processing
     for(int f = 0; f < factories; f++)
         {
@@ -241,7 +248,9 @@ int main(int argc, char **argv)
     //
     // Wait until no more candy
     //
+#ifdef DEBUG
     printf("Waiting for buffer to empty\n");
+#endif
     while(!bbuff_is_empty()) { /*Wait for kids to eat*/ }
 
 
@@ -249,17 +258,24 @@ int main(int argc, char **argv)
     // Stop kid threads
     //
     //Cancel thread execution then join them back to main thread
+#ifdef DEBUG
     printf("Stopping Kids\n");
+#endif
     for(int f = 0; f < kids; f++)
         {
+#ifdef DEBUG
         printf("Cancelling Kid %d\n", f);
+#endif
         pthread_cancel(kidThread_id[f]);
         }
-
+#ifdef DEBUG
     printf("Joining Kids\n");
+#endif
     for(int f = 0; f < kids; f++)
         {
+#ifdef DEBUG
         printf("Joining Kid %d\n", f);
+#endif
         pthread_join(kidThread_id[f], NULL);
         }
 
@@ -267,7 +283,9 @@ int main(int argc, char **argv)
     //
     // Print stats
     //
+#ifdef DEBUG
     printf("Printing Stats\n");
+#endif
     stats_display();
 
 
