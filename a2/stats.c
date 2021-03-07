@@ -66,7 +66,7 @@ void stats_init(int num_producers)
         stats[f].eaten = 0;
         stats[f].totalDelay = 0.0;
         stats[f].maxDelay = 0.0;
-        stats[f].minDelay = 1000000000.0;
+        stats[f].minDelay = 10000000.0;
         }
 
     return;
