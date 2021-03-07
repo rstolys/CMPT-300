@@ -91,13 +91,14 @@ void* kid(void* param)
     double tConsumed;
 
     // Allow kid thread to be cancelled at any time
-    int cancelType;
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &cancelType);
+    int oldCancelType;
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldCancelType);
 
     while(true)
         {
         //Get candy
         candy = (candy_t*) bbuff_blocking_extract();
+        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldCancelType);
         tConsumed = current_time_in_ms();
 
         if(candy != NULL)
@@ -109,7 +110,8 @@ void* kid(void* param)
             candy = NULL;
             }
 
-        sleep(rand() % 2);   //sleep for 0 to 1 seconds  
+        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldCancelType);
+        sleep(rand() % 2);   //sleep for 0 to 1 seconds
         }
     
     pthread_exit(NULL);
@@ -153,6 +155,7 @@ int main(int argc, char **argv)
         if(factories < 1 || kids < 1  || seconds < 1 )
             {
             //print error message
+            printf("There must be 1 or more factories, kids, and time in seconds.\nYou have provided %ld, %ld, and %ld respectively.\n", factories, kids, seconds);
             exit(ERROR);
             }
         }
@@ -209,11 +212,11 @@ int main(int argc, char **argv)
             //Indicate some error occured
             exit(ERROR);        //Is this the right response?
             }
-        }      
+        }
 
 
     //
-    // Wait for resquested time
+    // Wait for requested time
     //
     for(int s = 0; s < seconds; s++)
         {
@@ -237,7 +240,9 @@ int main(int argc, char **argv)
     //
     // Wait until no more candy
     //
-    while(!bbuff_is_empty()) {/*Wait for kids to eat*/}
+    printf("Waiting for buffer to empty\n");
+    while(!bbuff_is_empty()) { /*Wait for kids to eat*/ }
+
 
 
     //
@@ -246,6 +251,7 @@ int main(int argc, char **argv)
     //Cancel thread execution then join them back to main thread
     for(int f = 0; f < kids; f++)
         {
+        printf("Cancelling Kid %d\n", f);
         pthread_cancel(kidThread_id[f]);
         }
 
