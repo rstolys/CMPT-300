@@ -155,7 +155,7 @@ int main(int argc, char **argv)
         if(factories < 1 || kids < 1  || seconds < 1 )
             {
             //print error message
-            printf("One or more of 'factories', 'kids' or 'seconds' is less than 1. Each of these values must be at least 1");
+            printf("One or more of 'factories', 'kids' or 'seconds' is less than 1. Each of these values must be at least 1\n");
             exit(ERROR);
             }
         }
