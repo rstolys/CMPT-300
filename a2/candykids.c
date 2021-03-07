@@ -27,6 +27,7 @@
 //For debugging 
 //#define DEBUG
 
+
 /***GLOBAL VARIABLES**********************************************************/
 typedef struct {
     int factory_number;
@@ -35,13 +36,14 @@ typedef struct {
 
 _Bool generateCandy = false;
 
-/***FUNCTION DECLARATIONS*****************************************************/
 
+/***FUNCTION DECLARATIONS*****************************************************/
 void* factory(void* factory_id);
 
 void* kid(void* param);
 
 double current_time_in_ms(void);
+
 
 /***FUNCTION DEFINITIONS******************************************************/
 
@@ -95,6 +97,7 @@ void* kid(void* param)
     while(true)
         {
         //Get candy
+<<<<<<< HEAD
 #ifdef DEBUG
         printf("Getting Candy!\n");
 #endif
@@ -105,6 +108,11 @@ void* kid(void* param)
 #ifdef DEBUG
         printf("Done with getting Candy!\n");
 #endif
+=======
+        candy = (candy_t*) bbuff_blocking_extract();
+        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldCancelType);
+        tConsumed = current_time_in_ms();
+>>>>>>> 741145501ddb0505d1a3138e8e25815b18fe79ff
 
         if(candy != NULL)
             {
@@ -235,9 +243,12 @@ int main(int argc, char **argv)
     // Stop cody-factory threads
     //
     //Tell them to stop then join them back to main thread
+<<<<<<< HEAD
 #ifdef DEBUG
     printf("Stopping Factories\n");
 #endif
+=======
+>>>>>>> 741145501ddb0505d1a3138e8e25815b18fe79ff
     generateCandy = false;        //Indicate to threads to stop their processing
     for(int f = 0; f < factories; f++)
         {
@@ -254,13 +265,17 @@ int main(int argc, char **argv)
     while(!bbuff_is_empty()) { /*Wait for kids to eat*/ }
 
 
+
     //
     // Stop kid threads
     //
     //Cancel thread execution then join them back to main thread
+<<<<<<< HEAD
 #ifdef DEBUG
     printf("Stopping Kids\n");
 #endif
+=======
+>>>>>>> 741145501ddb0505d1a3138e8e25815b18fe79ff
     for(int f = 0; f < kids; f++)
         {
 #ifdef DEBUG
@@ -268,6 +283,7 @@ int main(int argc, char **argv)
 #endif
         pthread_cancel(kidThread_id[f]);
         }
+<<<<<<< HEAD
 #ifdef DEBUG
     printf("Joining Kids\n");
 #endif
@@ -276,6 +292,11 @@ int main(int argc, char **argv)
 #ifdef DEBUG
         printf("Joining Kid %d\n", f);
 #endif
+=======
+
+    for(int f = 0; f < kids; f++)
+        {
+>>>>>>> 741145501ddb0505d1a3138e8e25815b18fe79ff
         pthread_join(kidThread_id[f], NULL);
         }
 
@@ -283,9 +304,12 @@ int main(int argc, char **argv)
     //
     // Print stats
     //
+<<<<<<< HEAD
 #ifdef DEBUG
     printf("Printing Stats\n");
 #endif
+=======
+>>>>>>> 741145501ddb0505d1a3138e8e25815b18fe79ff
     stats_display();
 
 
