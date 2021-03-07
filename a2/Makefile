@@ -5,7 +5,7 @@
 CC=cc -pthread
 CXX=CC
 #CCFLAGS= -g -std=c99 -Wall -Werror -lrt
-CCFLAGS= -g -std=c99 -D_POSIX_C_SOURCE=200809L -Wall -Werror
+CCFLAGS= -g -std=c99 -D_POSIX_C_SOURCE=200809L -Wall -Werror -lrt
 
 all: candykids test
 
