@@ -31,8 +31,6 @@ struct Myalloc {
     void* memory;
     struct memHead* freeList;
     struct memHead* allocList;
-    // Some other data members you want, 
-    // such as lists to record allocated/free memory
 };
 
 struct Myalloc myalloc;
@@ -46,6 +44,8 @@ void getAllocatedStats(struct memHead* allocList, int* allocSize, int* allocChun
 void getFreeMemStats(struct memHead* freeList, int* freeSize, int* freeChunks, int* smallestChunk, int* largestChunk); 
 
 void setNewMemHead(struct memHead* newNode, int size, struct memHead** oldHead);
+
+void alterMemHead(struct memHead** listHead, struct memHead* toAlter, int size);
 
 void removeMemHead(struct memHead** listHead, struct memHead* toRemove);
 
@@ -112,25 +112,31 @@ void* allocate(int _size)
             {
             struct memHead* availableMem = myalloc.freeList;
 
-            do 
-                {
-                if(_size <= availableMem->size)
+            if(availableMem != NULL)
+            	{
+                do
                     {
-                    ptr = availableMem + HEADER_SIZE;
+                    if(_size <= availableMem->size)
+                        {
+                        ptr = availableMem + HEADER_SIZE;
 
-                    //Remove the memHead from the freeList
-                    removeMemHead(&myalloc.freeList, availableMem);
+                        //Alter or remove the memHead from the freeList
+                        if(_size == availableMem->size)
+                        	removeMemHead(&myalloc.freeList, availableMem);
+                        else
+                        	alterMemHead(&myalloc.freeList, availableMem, _size);
 
-                    //Set the header values and update the head of our alloc list
-                    setNewMemHead(availableMem, _size, &myalloc.allocList);
-                    break;
-                    }
-                else 
-                    {
-                    availableMem = availableMem->next;
-                    }
-                } while(availableMem->next != NULL);
-            
+                        //Set the header values and update the head of our alloc list
+                        setNewMemHead(availableMem, _size, &myalloc.allocList);
+                        break;
+                        }
+                    else
+                        {
+                        availableMem = availableMem->next;
+                        }
+                    } while(availableMem->next != NULL);
+            	}
+
             break;
             }
         case BEST_FIT:
@@ -155,7 +161,7 @@ void deallocate(void* _ptr)
     assert(_ptr != NULL);
 
     //Get reference to header
-    struct memHead* oldHead = _ptr - HEADER_SIZE;
+    struct memHead* oldHead = ((struct memHead*)_ptr) - HEADER_SIZE;
 
     //Remove the memHead from the allocList
     removeMemHead(&myalloc.allocList, oldHead);
@@ -355,7 +361,7 @@ void getFreeMemStats(struct memHead* freeList, int* freeSize, int* freeChunks, i
     struct memHead* currHead = freeList;
     int fSize = 0;
     int fChunks = 0;
-    int sChunk = freeList->size;
+    int sChunk = freeList == NULL ? 0 : freeList->size;
     int lChunk = 0;
 
     while(currHead != NULL)
@@ -426,10 +432,49 @@ void removeMemHead(struct memHead** listHead, struct memHead* toRemove)
     else 
         {
         //Change the head of the list
-        listHead = toRemove->next;
+        *listHead = toRemove->next;
         }
     }
 
+
+/*******************************************************************
+** alterMemHead -- Moves the available memory header to a new location
+**
+** @param[in]  listHead     head of the list to alter an element from
+** @param[in]  toAlter      node of list to be altered
+** @param[in]  size         size of memory taken away from the free block
+**
+********************************************************************/
+void alterMemHead(struct memHead** listHead, struct memHead* toAlter, int size)
+    {
+    //Start at head of list
+    struct memHead* currHead = *listHead;
+
+    //Make sure the head is not what we are altering
+    if(*listHead != toAlter)
+        {
+    	//Find toAlter node in the list
+        while(currHead->next != toAlter)
+            {
+            currHead = currHead->next;
+            }
+
+        //Change the next pointer to point to the block following this
+        memcpy(toAlter, toAlter + size + HEADER_SIZE, HEADER_SIZE);
+
+        //Keep linked list linked
+        currHead->next = toAlter + size;
+
+        //Fix size change when allocating this block
+        (toAlter+size)->size = toAlter->size - size - HEADER_SIZE;
+        }
+    else
+        {
+        //Change the head of the list
+        *listHead = toAlter + size + HEADER_SIZE;
+        (*listHead)->size = toAlter->size - size - HEADER_SIZE;
+        }
+    }
 
 /*******************************************************************
 ** compact_allocation -- groups allocated memory blocks to compact memory block
@@ -473,7 +518,6 @@ void sortList( struct memHead **listHead )
             }
         else 
             {
-            
             ((struct memHead*)leastAddr_prev)->next = ((struct memHead*)leastAddr)->next;
             }
 
