@@ -31,8 +31,6 @@ struct Myalloc {
     void* memory;
     struct memHead* freeList;
     struct memHead* allocList;
-    // Some other data members you want, 
-    // such as lists to record allocated/free memory
 };
 
 struct Myalloc myalloc;
@@ -299,10 +297,12 @@ void print_statistics()
     int largest_free_chunk_size = 0;
 
     // Calculate the statistics
+    printf("test\n");
     getAllocatedStats(myalloc.allocList, &allocated_size, &allocated_chunks);
-
+printf("test2\n");
     getFreeMemStats(myalloc.allocList, &free_size, &free_chunks, &smallest_free_chunk_size, &largest_free_chunk_size);
 
+printf("test3\n");
     printf("Allocated size = %d\n", allocated_size);
     printf("Allocated chunks = %d\n", allocated_chunks);
     printf("Free size = %d\n", free_size);
@@ -326,10 +326,16 @@ void getAllocatedStats(struct memHead* allocList, int* allocSize, int* allocChun
     int aSize = 0;
     int aChunks = 0;
 
+    printf("start of currentHead: %p\n", currHead);
     while(currHead != NULL)
         {
         aSize += currHead->size;
         aChunks++;
+
+        printf("currentHead: %p\n", currHead);
+
+        if(aChunks > 50)
+            break;
 
         currHead = currHead->next;
         }

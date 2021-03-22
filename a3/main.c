@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
         *(p[i]) = i;
         printf("p[%d] = %p ; *p[%d] = %d\n", i, p[i], i, *(p[i]));
         }
-
+        
     print_statistics();
 
     for (int i = 0; i < 10; ++i) 
