@@ -1,3 +1,4 @@
 #Any executatble file will be ignored
 .o
 .DS_Store
+.vscode/*

@@ -4,7 +4,7 @@ OBJS = main.o myalloc.o
 CFLAGS = -Wall -g -std=c99 -D_POSIX_C_SOURCE=199309L
 CC = gcc
 
-all: clean $(TARGET) test
+all: clean $(TARGET) #test
 
 %.o : %.c
 	$(CC) -c $(CFLAGS) $<
