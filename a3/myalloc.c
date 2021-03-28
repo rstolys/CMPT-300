@@ -77,11 +77,7 @@ void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm)
     memcpy(myalloc.memory, &freeSpace, HEADER_SIZE);
 
     //Create freeList header in memory block
-    struct memHead* first = malloc(sizeof(struct memHead));
-    first->curr = (int*) myalloc.memory;        
-    first->next = NULL;
-
-    myalloc.freeList = first;
+    myalloc.freeList = List_createNode((int*)myalloc.memory);
     }
 
 /*******************************************************************
@@ -94,8 +90,7 @@ void destroy_allocator()
     {
     free(myalloc.memory);
 
-    //No other operations are needed. 
-    //All memory is contained in myalloc.memory
+    //Free linked lists... 
     }
 
 
@@ -115,29 +110,26 @@ void* allocate(int _size)
             {
             struct memHead* availableMem = myalloc.freeList;
 
-            if(availableMem != NULL)
+            //Loop over free memory blocks
+            while(availableMem != NULL)
             	{
-                do
+                //If the desired block fits in the free block
+                if(_size <= *(availableMem->curr))
                     {
-                    if(_size <= *(availableMem->curr))
-                        {
-                        ptr = availableMem->curr + HEADER_SIZE;
-
-                        printf("currSize_in: %d\n", *(availableMem->curr));
-
-                        //Update the freeList and create allocated node in allocList
-                        List_freeToAlloc(&myalloc.freeList, &myalloc.allocList, availableMem, _size);
-
-                        printf("currSize_Out: %d\n", *(myalloc.freeList->curr));
-
-                        break;
-                        }
-                    else
-                        {
-                        availableMem = availableMem->next;
-                        }
-                    } while(availableMem != NULL);
+                    //Set the return address and exit from loop to set the header
+                    ptr = availableMem->curr + HEADER_SIZE;
+                    break;
+                    }
+                else
+                    {
+                    //Move to next free block to check if it will fit element
+                    availableMem = availableMem->next;
+                    }
             	}
+
+                //Update the freeList and create allocated node in allocList
+                if(availableMem != NULL)
+                    List_freeToAlloc(&myalloc.freeList, &myalloc.allocList, availableMem, _size);
 
             break;
             }
@@ -163,7 +155,7 @@ void deallocate(void* _ptr)
     assert(_ptr != NULL);
 
     //Get reference to header
-    struct memHead* oldHead = ((struct memHead*)_ptr) - HEADER_SIZE;
+    struct memHead* oldHead = (struct memHead*)((int*)_ptr - HEADER_SIZE);
 
     //Remove the allocated block and add it to the free list
     List_allocToFree(&myalloc.allocList, &myalloc.freeList, oldHead);

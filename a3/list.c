@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,15 +10,25 @@
  * Allocate memory for a node of type strct nodeStruct and initialize it with the value
  * item. Return a pointer to the new node
  */
-struct memHead* List_createNode(int* size){
+/*******************************************************************
+** List_createNode -- create a new node for a linked list
+**
+** @param[in]  size                 address of the curr value in memHead 
+** @param[out] struct_memHead*      Newly created memHead noede 
+**
+********************************************************************/
+struct memHead* List_createNode(int* size)
+    {
     struct memHead* newNode = (struct memHead*) malloc( 1*sizeof(struct memHead) );
-    if(newNode == NULL){
-        return NULL;
-    }
-    newNode->curr = size;
-    newNode->next = NULL;
+
+    if(newNode != NULL)
+        {
+        newNode->curr = size;
+        newNode->next = NULL;
+        }
+    
     return newNode;
-}
+    }
 
 /* 
  * Insert node at the head of the list
@@ -33,21 +44,21 @@ void List_insertHead( struct memHead** headRef, struct memHead* node){
  * Insert nose after the tail of the list
  */
 void List_insertTail( struct memHead** headRef, struct memHead* node){
-    struct memHead* curNode = *headRef;
+    struct memHead* currNode = *headRef;
 
     /* If head ref if NULL, no nodes in list, add forst node into list */
-    if(curNode == NULL){
+    if(currNode == NULL){
         *headRef = node;
         return;
     }
     
     /* First node not NULL, traverse the linked list until next node is NULL (end of the list) */
-    while(curNode->next != NULL){
-        curNode = curNode->next;
+    while(currNode->next != NULL){
+        currNode = currNode->next;
     }
 
     /* Add the node to the end of the list */
-    curNode->next = node;
+    currNode->next = node;
 }
 
 /* 
@@ -129,80 +140,60 @@ void List_allocToFree( struct memHead** allocRef, struct memHead** freeRef, stru
 }
 
 
-/* 
- * Find the node to remove from the free list
- *  Alters free list to reflect allocted memory by removing 
- *  block or moving block to new start of free memory chunk
- *  Creates new node and adds it to alloc list
- */
-void List_freeToAlloc( struct memHead** freeRef, struct memHead** allocRef, struct memHead* node, int size ){
+/*******************************************************************
+** List_freeToAlloc -- Find the node to remove from the free list
+**                          Alters free list to reflect allocted memory by removing 
+**                          block or moving block to new start of free memory chunk
+**                          Creates new node and adds it to alloc list
+**
+** @param[in]  freeRef      address to linked list of free block memHeads   
+** @param[in]  allocref     address to linked list of allocated block memHeads
+** @param[in]  node         node in free linked list that points to memory we want to allocate
+** @param[in]  size         size of memory to be allocated        
+**
+********************************************************************/
+void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struct memHead* node, int size)
+    {
     struct memHead* temp = NULL;
     struct memHead* prevNode = NULL;   
 
-    // Add the alloc list node and modify the free list
-    //      assuming node is not the head
-    if(*freeRef != node){
+    //Check node to allocate is not the head
+    if(*freeRef != node)
+        {
         temp = (*freeRef)->next;
         prevNode = *freeRef;
 
         //Find node to remove
-        while(temp != node && temp != NULL){
+        while(temp != node && temp != NULL)
+            {
             prevNode = temp; 
             temp = temp->next;
-        }
+            }
 
         //Check the size of the node we found
-        if(size == *(node->curr)) {
+        if(size == *(node->curr)) 
+            {
             //Remove the node from the list
             prevNode->next = temp->next;
 
             //Insert the the free list node to the alloc list 
             List_insertTail(allocRef, node);
-        }
-        else {
-            //Move the next pointer to the new location
-            prevNode->next = (struct memHead*) (node->curr + size + HEADER_SIZE);
+            }
+        else 
+            {
+            int freeSize = *(node->curr);       //Get the size of the free space
+            int* headerAddr = node->curr;       //Get the address of the header
 
-            //Set the new size of the free block
-            int newSize = *(node->curr) - size;
-            memcpy(prevNode->next, &newSize, HEADER_SIZE);
-
-            //Set the new size of the block, create the node for the alloc list and add it to the list
-            memcpy(node, &size, HEADER_SIZE);
-            struct memHead* allocNode = List_createNode((int*)node);
-            List_insertTail(allocRef, allocNode);
-
-            //change the node pointer in our free list
-            node = prevNode->next;
-        }
-    }
-    else {
-        //Check the size of the node we found
-        if(size == *(node->curr)) {
-            //Remove the node from the list
-            *freeRef = node->next;
-
-            //Insert the the free list node to the alloc list 
-            List_insertTail(allocRef, node);
-        }
-        else {
-            int freeSize = *(node->curr);
-            int* sizeAddr = node->curr;
-
-            //Move the next pointer to the new location
-            (*freeRef)->curr = node->curr + size + HEADER_SIZE;
+            //Move the header pointer to the new location
+            node->curr = node->curr + size + HEADER_SIZE;
 
             //Set the new size of the free block
             int newSize = freeSize - size - HEADER_SIZE;
-            memcpy((*freeRef)->curr, &newSize, HEADER_SIZE);
+            memcpy(node->curr, &newSize, HEADER_SIZE);
 
-            //printf("\n(*freeRef)->curr: %p, node->curr: %p\n", (*freeRef)->curr, node->curr);
-            //printf("*(*freeRef)->curr: %d, *(node->curr): %d\n", *((*freeRef)->curr), *(node->curr));
-            //printf("freeSize: %d, size: %d\n", freeSize, size);
-
-            //Set the new size of the block, create the node for the alloc list and add it to the list
-            memcpy(sizeAddr, &size, HEADER_SIZE);
-            struct memHead* allocNode = List_createNode(sizeAddr);
+            //Set the size of the allocated block, create new node to add to the alloc list
+            memcpy(headerAddr, &size, HEADER_SIZE);
+            struct memHead* allocNode = List_createNode(headerAddr);
 
             //Make sure create node worked properly
             if(allocNode == NULL)
@@ -212,9 +203,50 @@ void List_freeToAlloc( struct memHead** freeRef, struct memHead** allocRef, stru
                 }
             else 
                 List_insertTail(allocRef, allocNode);
+            }
+        }
+    else        //The node to allocate is the first node in the free list
+        {
+        //The size is equal to availible size -- allocate block, remove node from free list
+        if(size == *(node->curr)) 
+            {
+            //Remove the node from the list
+            *freeRef = node->next;
+
+            //Insert the the free list node to the alloc list 
+            List_insertTail(allocRef, node);
+            }
+        else        //The available free memory is greater than the needed space
+            {
+            int freeSize = *(node->curr);       //Get the size of the free space
+            int* headerAddr = node->curr;       //Get the address of the header
+
+            //Move the header pointer to the new location
+            node->curr = node->curr + size + HEADER_SIZE;
+
+            //Set the new size of the free block
+            int newSize = freeSize - size - HEADER_SIZE;
+            memcpy(node->curr, &newSize, HEADER_SIZE);
+
+            //printf("\n(*freeRef)->curr: %p, node->curr: %p\n", (*freeRef)->curr, node->curr);
+            //printf("*(*freeRef)->curr: %d, *(node->curr): %d\n", *((*freeRef)->curr), *(node->curr));
+            //printf("freeSize: %d, size: %d\n", freeSize, size);
+
+            //Set the size of the allocated block and create node to add to alloc list
+            memcpy(headerAddr, &size, HEADER_SIZE);
+            struct memHead* allocNode = List_createNode(headerAddr);
+
+            //Make sure create node worked properly
+            if(allocNode == NULL)
+                {
+                printf("No memory available on system\n");
+                exit(-1);
+                }
+            else 
+                List_insertTail(allocRef, allocNode);
+            }
         }
     }
-}
 
 /* 
  * Determine if there are consecutive free blocks and combine them together 
