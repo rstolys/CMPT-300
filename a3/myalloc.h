@@ -12,10 +12,15 @@
 //NONE
 
 /***DEFINES*******************************************************************/
-//NONE
+#define HEADER_SIZE  sizeof(int)
+
 
 /***GLOBAL VARIABLES**********************************************************/
 
+struct memHead{
+    int* curr;
+    struct memHead* next;
+};
 
 enum allocation_algorithm {FIRST_FIT, BEST_FIT, WORST_FIT};
 

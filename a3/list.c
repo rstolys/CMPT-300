@@ -1,16 +1,20 @@
-#include "list.h"
+
 #include <stdlib.h>
+#include <string.h>
+
+#include "list.h"
+#include "myalloc.h"
 
 /* 
  * Allocate memory for a node of type strct nodeStruct and initialize it with the value
  * item. Return a pointer to the new node
  */
-struct nodeStruct* List_createNode(int item){
-    struct nodeStruct* newNode = (struct nodeStruct*) malloc( 1*sizeof(struct nodeStruct) );
+struct memHead* List_createNode(int* size){
+    struct memHead* newNode = (struct memHead*) malloc( 1*sizeof(struct memHead) );
     if(newNode == NULL){
         return NULL;
     }
-    newNode->item = item;
+    newNode->curr = size;
     newNode->next = NULL;
     return newNode;
 }
@@ -18,9 +22,9 @@ struct nodeStruct* List_createNode(int item){
 /* 
  * Insert node at the head of the list
  */
-void List_insertHead( struct nodeStruct** headRef, struct nodeStruct* node){
+void List_insertHead( struct memHead** headRef, struct memHead* node){
     /* Make head point to new node, and new node point to old head */
-    struct nodeStruct* temp = *headRef;
+    struct memHead* temp = *headRef;
     *headRef = node;
     node->next = temp;
 }
@@ -28,8 +32,8 @@ void List_insertHead( struct nodeStruct** headRef, struct nodeStruct* node){
 /* 
  * Insert nose after the tail of the list
  */
-void List_insertTail( struct nodeStruct** headRef, struct nodeStruct* node){
-    struct nodeStruct* curNode = *headRef;
+void List_insertTail( struct memHead** headRef, struct memHead* node){
+    struct memHead* curNode = *headRef;
 
     /* If head ref if NULL, no nodes in list, add forst node into list */
     if(curNode == NULL){
@@ -50,7 +54,7 @@ void List_insertTail( struct nodeStruct** headRef, struct nodeStruct* node){
  * Count number of nodes in the list.
  * Return 0 if the list is empty, i.e., head == NULL
  */
-int List_countNodes( struct nodeStruct* head ){
+int List_countNodes( struct memHead* head ){
     if(head == NULL){
         return 0;
     } else {
@@ -64,76 +68,287 @@ int List_countNodes( struct nodeStruct* head ){
 }
 
 /* 
- * Return the first node holding the value item, return NULL if none found
+ * Return the first node where desired size is less than availible size
  */
-struct nodeStruct* List_findNode( struct nodeStruct* head, int item ){
-    while(head->item != item && head->next != NULL){
+struct memHead* List_findFreeNode( struct memHead* head, int desireSize ){
+    while(*(head->curr) > desireSize && head->next != NULL){
         head = head->next;
     }
-    if(head->item == item){
+    if(*(head->curr) <= desireSize){
         return head;
     } else {
         return NULL;
     }
-
 }
 
 /* 
- * Delete node from the list and free memory allocated to it.
- * This function assumes that node has been properly set to a valid node
- * in the list. For example, the client code may have found it by calling
- * List_findNode(). If the list contains only one node, the head of the
- * list should be set to NULL
+ * Return the node that matches the address provided.
+ *      The address provided points to data element in front of header
  */
-void List_deleteNode( struct nodeStruct** headRef, struct nodeStruct* node ){
-    struct nodeStruct* temp = NULL;
-    struct nodeStruct* prevNode = NULL;   
+struct memHead* List_findAllocNode( struct memHead* head, void* data ){
+    while((head->curr + HEADER_SIZE) != data && head->next != NULL){
+        head = head->next;
+    }
+    if((head->curr + HEADER_SIZE) == data){
+        return head;
+    } else {
+        return NULL;
+    }
+}
 
-    /* Check if head is node, make head point to next node if so */
-    if(*headRef == node){
-        temp = *headRef;
-        *headRef = temp->next;
+/* 
+ * Find the node to remove from the alloc list
+ *  moves node to the free list
+ */
+void List_allocToFree( struct memHead** allocRef, struct memHead** freeRef, struct memHead* node ){
+    struct memHead* temp = NULL;
+    struct memHead* prevNode = NULL;   
+
+    // Remove node from alloc list
+    if(*allocRef == node){
+        //Move head node to next element
+        temp = *allocRef;
+        *allocRef = temp->next;
     } else{
-        temp = (*headRef)->next;
-        prevNode = *headRef;
+        temp = (*allocRef)->next;
+        prevNode = *allocRef;
 
+        //Find node to remove
         while(temp != node && temp != NULL){
             prevNode = temp; 
             temp = temp->next;
         }
+
+        //Remove the node from the list
         prevNode->next = temp->next;
     }
 
-    /* Assumption that the node has been found (as stated in problem discription)
-       remove node and link the two nodes on either side */
-
-    if(temp != NULL)
-        free(temp);
+    
+    //Insert node to tail of free list
+    List_insertTail(freeRef, node); 
 }
 
-/*
- * Sort the list in ascending order based on the item field
- * Any sort algorithm is fine
+
+/* 
+ * Find the node to remove from the free list
+ *  Alters free list to reflect allocted memory by removing 
+ *  block or moving block to new start of free memory chunk
+ *  Creates new node and adds it to alloc list
  */
-void List_sort( struct nodeStruct **headRef ){
-    struct nodeStruct* notSortedYet = *headRef;
-    struct nodeStruct* traverser;
-    int tempItem;
+void List_freeToAlloc( struct memHead** freeRef, struct memHead** allocRef, struct memHead* node, int size ){
+    struct memHead* temp = NULL;
+    struct memHead* prevNode = NULL;   
 
-    while(notSortedYet != NULL){
-        traverser = notSortedYet;
+    // Add the alloc list node and modify the free list
+    //      assuming node is not the head
+    if(*freeRef != node){
+        temp = (*freeRef)->next;
+        prevNode = *freeRef;
 
-        while(traverser != NULL){
-            if(traverser->item < notSortedYet->item){
-                tempItem = notSortedYet->item;
-                notSortedYet->item = traverser->item;
-                traverser->item = tempItem;
-            }
-
-            traverser = traverser->next;
+        //Find node to remove
+        while(temp != node && temp != NULL){
+            prevNode = temp; 
+            temp = temp->next;
         }
 
-        notSortedYet = notSortedYet->next;
+        //Check the size of the node we found
+        if(size == *(node->curr)) {
+            //Remove the node from the list
+            prevNode->next = temp->next;
+
+            //Insert the the free list node to the alloc list 
+            List_insertTail(allocRef, node);
+        }
+        else {
+            //Move the next pointer to the new location
+            prevNode->next = (struct memHead*) (node->curr + size + HEADER_SIZE);
+
+            //Set the new size of the free block
+            int newSize = *(node->curr) - size;
+            memcpy(prevNode->next, &newSize, HEADER_SIZE);
+
+            //Set the new size of the block, create the node for the alloc list and add it to the list
+            memcpy(node, &size, HEADER_SIZE);
+            struct memHead* allocNode = List_createNode((int*)node);
+            List_insertTail(allocRef, allocNode);
+
+            //change the node pointer in our free list
+            node = prevNode->next;
+        }
+    }
+    else {
+        //Check the size of the node we found
+        if(size == *(node->curr)) {
+            //Remove the node from the list
+            *freeRef = node->next;
+
+            //Insert the the free list node to the alloc list 
+            List_insertTail(allocRef, node);
+        }
+        else {
+            int freeSize = *(node->curr);
+            int* sizeAddr = node->curr;
+
+            //Move the next pointer to the new location
+            (*freeRef)->curr = node->curr + size + HEADER_SIZE;
+
+            //Set the new size of the free block
+            int newSize = freeSize - size - HEADER_SIZE;
+            memcpy((*freeRef)->curr, &newSize, HEADER_SIZE);
+
+            //printf("\n(*freeRef)->curr: %p, node->curr: %p\n", (*freeRef)->curr, node->curr);
+            //printf("*(*freeRef)->curr: %d, *(node->curr): %d\n", *((*freeRef)->curr), *(node->curr));
+            //printf("freeSize: %d, size: %d\n", freeSize, size);
+
+            //Set the new size of the block, create the node for the alloc list and add it to the list
+            memcpy(sizeAddr, &size, HEADER_SIZE);
+            struct memHead* allocNode = List_createNode(sizeAddr);
+
+            //Make sure create node worked properly
+            if(allocNode == NULL)
+                {
+                printf("No memory available on system\n");
+                exit(-1);
+                }
+            else 
+                List_insertTail(allocRef, allocNode);
+        }
+    }
+}
+
+/* 
+ * Determine if there are consecutive free blocks and combine them together 
+ */
+void List_combineNeighbours(struct memHead** listRef, struct memHead* oldHead)
+    {
+    struct memHead* prevNode = NULL;
+    struct memHead* currNode = *listRef;
+    struct memHead* nextNode = (*listRef)->next;
+
+    //Find the current node and it's neighbours in the list
+    while(currNode != NULL)
+        {
+        if(currNode == oldHead)
+            break;
+        else 
+            {
+            prevNode = currNode;
+            currNode = currNode->next;
+            nextNode = (nextNode == NULL) ? NULL : nextNode->next;
+            }
+        }
+    
+    //For pointer safety
+    if(currNode != NULL)
+        {
+        //Determine if the next block is availible to combine
+        if(nextNode != NULL && (void*)(currNode->curr + *(currNode->curr) + HEADER_SIZE) == (void*)nextNode)
+            {
+            //Combine these two blocks
+            *(currNode->curr) += *(nextNode->curr);
+            currNode->next = nextNode->next;
+            memset(nextNode, 0, HEADER_SIZE);       //Clear the header from the memory block
+            
+            //Free the memory for the nextNode 
+            free(nextNode);
+            }
+
+        //Determine if the previous block is availible to combine
+        if(prevNode != NULL && (void*)(prevNode->curr + *(prevNode->curr) + HEADER_SIZE) == (void*)currNode) 
+            {
+            //Combine the two blocks 
+            *(prevNode->curr) += *(currNode->curr);
+            prevNode->next = currNode->next;
+            memset(nextNode, 0, HEADER_SIZE);       //Clear the header from the memory block
+
+            //Free the memory for the currNode 
+            free(nextNode);
+            }
+        }
     }
 
+
+/* 
+ * Delete all the elements from the list
+ */
+void List_delete( struct memHead** listRef ) {
+    struct memHead* temp = NULL;
+    struct memHead* nextNode = *listRef;
+
+    //Loop through list and remove all elements
+    while(nextNode != NULL) {
+        temp = nextNode;
+        nextNode = nextNode->next;
+
+        //Free current node
+        free(temp);
+    }
+
+    //Set our list to null -- to be sure 
+    *listRef = NULL;
 }
+
+
+/*******************************************************************
+** compact_allocation -- groups allocated memory blocks to compact memory block
+**
+** @param[in]   listHead       head of linked list to be sorted
+**
+********************************************************************/
+void List_sort( struct memHead **listHead )
+    {
+    struct memHead* oldListHead = *listHead;
+    struct memHead* tempHead = NULL;
+    struct memHead* tempTail = NULL;
+    struct memHead* traverser;
+    struct memHead* traverser_prev = NULL;
+    void* leastAddr = oldListHead->curr;
+    void* leastAddr_prev = NULL;
+
+    //While our oldList still points to memHeads
+    while(oldListHead != NULL)
+        {
+        traverser = oldListHead;
+
+        //Find the smallest address 
+        while(traverser != NULL)
+            {
+            if(traverser->curr <= (int*)leastAddr)
+                {
+                leastAddr_prev = (traverser_prev == NULL) ? NULL : traverser_prev->curr;
+                leastAddr = traverser->curr;              //Set the smallest address
+                }
+
+            traverser_prev = traverser;
+            traverser = traverser->next;
+            }
+        //We now have the smallest address
+
+        //Remove the element from the list -- special case if element was head
+        if(leastAddr == oldListHead->curr)
+            {
+            oldListHead = oldListHead->next;
+            }
+        else 
+            {
+            ((struct memHead*)leastAddr_prev)->next = ((struct memHead*)leastAddr)->next;
+            }
+
+        //Move element to new list -- specical case if new list is empty
+        if(tempHead == NULL)
+            {
+            tempHead = (struct memHead*)leastAddr;
+            tempTail = (struct memHead*)leastAddr;
+            ((struct memHead*)leastAddr)->next = NULL;
+            }
+        else 
+            {
+            tempTail->next = (struct memHead*)leastAddr;
+            tempTail = tempTail->next;
+            ((struct memHead*)leastAddr)->next = NULL;
+            }
+        }
+
+    //Set the new header of the list
+    *listHead = tempHead;
+    }

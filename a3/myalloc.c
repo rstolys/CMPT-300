@@ -11,7 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
 #include "myalloc.h"
+#include "list.h"
 
 
 /***DEFINES*******************************************************************/
@@ -20,14 +22,7 @@
 #define FAILURE             1
 //#define DEBUG     //For debugging 
 
-#define HEADER_SIZE  sizeof(int)
-
 /***GLOBAL VARIABLES**********************************************************/
-struct memHead{
-    int* curr;
-    struct memHead* next;
-};
-
 struct Myalloc {
     enum allocation_algorithm aalgorithm;
     int size;
@@ -48,11 +43,7 @@ void getFreeMemStats(struct memHead* freeList, int* freeSize, int* freeChunks, i
 
 void setNewMemHead(struct memHead* newNode, int size, struct memHead** oldHead);
 
-void alterMemHead(struct memHead** listHead, struct memHead* toAlter, int size);
-
 void removeMemHead(struct memHead** listHead, struct memHead* toRemove);
-
-void sortList(struct memHead** head);
 
 
 /***FUNCTION DEFINITIONS******************************************************/
@@ -72,7 +63,7 @@ void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm)
     myalloc.allocList = NULL;
 
     //Allocate memory and set it to empty 
-    if(-1 == (myalloc.memory = malloc((size_t)myalloc.size)))
+    if(NULL == (myalloc.memory = malloc((size_t)myalloc.size)))
         {
         printf("Initialization memory allocation failed.\n");
         exit(ERROR);
@@ -90,7 +81,7 @@ void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm)
     first->curr = (int*) myalloc.memory;        
     first->next = NULL;
 
-    myalloc.freeList = &first;
+    myalloc.freeList = first;
     }
 
 /*******************************************************************
@@ -128,25 +119,24 @@ void* allocate(int _size)
             	{
                 do
                     {
-                    if(_size <= availableMem->size)
+                    if(_size <= *(availableMem->curr))
                         {
-                        ptr = availableMem + HEADER_SIZE;
+                        ptr = availableMem->curr + HEADER_SIZE;
 
-                        //Alter or remove the memHead from the freeList
-                        if(_size == availableMem->size)
-                        	removeMemHead(&myalloc.freeList, availableMem);
-                        else
-                        	alterMemHead(&myalloc.freeList, availableMem, _size);
+                        printf("currSize_in: %d\n", *(availableMem->curr));
 
-                        //Set the header values and update the head of our alloc list
-                        setNewMemHead(availableMem, _size, &myalloc.allocList);
+                        //Update the freeList and create allocated node in allocList
+                        List_freeToAlloc(&myalloc.freeList, &myalloc.allocList, availableMem, _size);
+
+                        printf("currSize_Out: %d\n", *(myalloc.freeList->curr));
+
                         break;
                         }
                     else
                         {
                         availableMem = availableMem->next;
                         }
-                    } while(availableMem->next != NULL);
+                    } while(availableMem != NULL);
             	}
 
             break;
@@ -175,14 +165,14 @@ void deallocate(void* _ptr)
     //Get reference to header
     struct memHead* oldHead = ((struct memHead*)_ptr) - HEADER_SIZE;
 
-    //Remove the memHead from the allocList
-    removeMemHead(&myalloc.allocList, oldHead);
+    //Remove the allocated block and add it to the free list
+    List_allocToFree(&myalloc.allocList, &myalloc.freeList, oldHead);
 
     //Clear allocated memory
-    memset(_ptr, 0, oldHead->size);
+    memset(_ptr, 0, *(oldHead->curr));
 
-    //Set the header values and update the head of our free list
-    setNewMemHead(oldHead, oldHead->size, &myalloc.freeList);
+    //Check for back to back free blocks in free list
+    List_combineNeighbours(&myalloc.freeList, oldHead);
     }
 
 
@@ -200,8 +190,8 @@ int compact_allocation(void** _before, void** _after)
     void* nextFreeMem = NULL;           //This points to the header location
 
     //Sort the free and alloc header lists
-    sortList(&myalloc.allocList);
-    sortList(&myalloc.freeList);
+    List_sort(&myalloc.allocList);
+    List_sort(&myalloc.freeList);
 
     int ptrNum = 0;
     struct memHead* allocHeader = myalloc.allocList;
@@ -210,32 +200,32 @@ int compact_allocation(void** _before, void** _after)
 
     while(allocHeader != NULL)
         {
-        if(freeHeader == NULL || allocHeader < freeHeader)
+        if(freeHeader == NULL || allocHeader->curr < freeHeader->curr)
             {
             //Set the location of the memory before compaction
-            _before[ptrNum] = allocHeader + HEADER_SIZE;
+            _before[ptrNum] = allocHeader->curr + HEADER_SIZE;
        
             if(nextFreeMem == NULL)
                 {
                 //We are not moving the memory, set the after pointer
-                _after[ptrNum] = allocHeader + HEADER_SIZE;
+                _after[ptrNum] = allocHeader->curr + HEADER_SIZE;
                 }
             else 
                 {
+                //Get the current size of the data block 
+                int currSize = *(allocHeader->curr);
+
                 //Copy the data to the new location 
-                memmove(nextFreeMem, allocHeader, allocHeader->size + HEADER_SIZE);
+                memmove(nextFreeMem, allocHeader->curr, currSize + HEADER_SIZE);
 
                 //Set the after pointer for the user
                 _after[ptrNum] = nextFreeMem + HEADER_SIZE;
 
                 //Update the allocList
-                if(prevAllocHeader != NULL)
-                    prevAllocHeader->next = nextFreeMem;
-                else 
-                    myalloc.allocList = nextFreeMem;
+                allocHeader->curr = nextFreeMem;
 
                 //Set the location of the nextFreeMem and the headers size
-                nextFreeMem += allocHeader->size + HEADER_SIZE;
+                nextFreeMem += currSize + HEADER_SIZE;
                 }
             
             //Update the current alloc header
@@ -243,12 +233,15 @@ int compact_allocation(void** _before, void** _after)
             allocHeader = allocHeader->next;
             ptrNum++;
             }
-        else if(allocHeader >= freeHeader)
+        else if(allocHeader->curr >= freeHeader->curr)
             {
             //Increase the free memory size
-            freeMemSize += ((struct memHead*)nextFreeMem)->size + HEADER_SIZE;
-            
-            //Move our free header to next open space
+            freeMemSize += *(freeHeader->curr) + HEADER_SIZE;
+
+            if(nextFreeMem == NULL)
+                nextFreeMem = freeHeader->curr;
+           
+            //Move our free header to next node in the free list
             freeHeader = freeHeader->next;
             }
         else 
@@ -258,14 +251,34 @@ int compact_allocation(void** _before, void** _after)
             }
         }
 
+    //Determine total free memory size not already counted
+    if(freeHeader != NULL)
+        {
+        //Calculate rest of free memory size 
+        while(freeHeader != NULL)
+            {
+            //Increase the free memory size
+            freeMemSize += *(freeHeader->curr) + HEADER_SIZE;
+           
+            //Move our free header to next node in the free list
+            freeHeader = freeHeader->next;
+            }
+        }
+
+    //Remove elements from free list
+    List_delete(&myalloc.freeList);
+   
     //Condense remaining free memeory and set the free memory head
     myalloc.freeList = nextFreeMem;
     if(nextFreeMem != NULL)
         {
-        //Set the free memory header
-        struct memHead freeHeader = {.size = freeMemSize - HEADER_SIZE, .next = NULL};
+        //Set the size of the free block
+        memcpy(nextFreeMem, &freeMemSize, HEADER_SIZE);
 
-        memcpy(myalloc.freeList, &freeHeader, HEADER_SIZE);
+        //Set the free memory header
+        struct memHead* newHeader = List_createNode((int*) nextFreeMem);
+
+        myalloc.freeList = newHeader;
         memset(myalloc.freeList + HEADER_SIZE, 0, freeMemSize - HEADER_SIZE);
         }
     
@@ -291,8 +304,8 @@ int available_memory()
         {
         do
             {
-            available_memory_size += freeHead->size;    //Increase free memory amount 
-            freeHead = freeHead->next;                  //Move to next block of free memory
+            available_memory_size += *(freeHead->curr);     //Increase free memory amount 
+            freeHead = freeHead->next;                      //Move to next block of free memory
             } 
             while(freeHead->next != NULL);
         }
@@ -317,12 +330,9 @@ void print_statistics()
     int largest_free_chunk_size = 0;
 
     // Calculate the statistics
-    printf("test\n");
     getAllocatedStats(myalloc.allocList, &allocated_size, &allocated_chunks);
-printf("test2\n");
-    getFreeMemStats(myalloc.allocList, &free_size, &free_chunks, &smallest_free_chunk_size, &largest_free_chunk_size);
+    getFreeMemStats(myalloc.freeList, &free_size, &free_chunks, &smallest_free_chunk_size, &largest_free_chunk_size);
 
-printf("test3\n");
     printf("Allocated size = %d\n", allocated_size);
     printf("Allocated chunks = %d\n", allocated_chunks);
     printf("Free size = %d\n", free_size);
@@ -346,16 +356,10 @@ void getAllocatedStats(struct memHead* allocList, int* allocSize, int* allocChun
     int aSize = 0;
     int aChunks = 0;
 
-    printf("start of currentHead: %p\n", currHead);
     while(currHead != NULL)
         {
-        aSize += currHead->size;
+        aSize += *(currHead->curr);
         aChunks++;
-
-        printf("currentHead: %p\n", currHead);
-
-        if(aChunks > 50)
-            break;
 
         currHead = currHead->next;
         }
@@ -367,7 +371,7 @@ void getAllocatedStats(struct memHead* allocList, int* allocSize, int* allocChun
 
 
 /*******************************************************************
-** getAllocatedStats -- determines the allocated size and number of chucks
+** getFreeMemStats -- determines the allocated size and number of chucks
 **
 ** @param[in]  freeList         Linked list of free blocks 
 ** @param[out]  freeSize        size of free memory
@@ -381,22 +385,22 @@ void getFreeMemStats(struct memHead* freeList, int* freeSize, int* freeChunks, i
     struct memHead* currHead = freeList;
     int fSize = 0;
     int fChunks = 0;
-    int sChunk = freeList == NULL ? 0 : freeList->size;
+    int sChunk = freeList == NULL ? 0 : *(freeList->curr);
     int lChunk = 0;
 
     while(currHead != NULL)
         {
         //Increment the total size and number of chunks
-        fSize += currHead->size;
+        fSize += *(currHead->curr);
         fChunks++;
 
         //Determine if chunk is smallest
-        if(sChunk > currHead->size)
-            sChunk = currHead->size;
+        if(sChunk > *(currHead->curr))
+            sChunk = *(currHead->curr);
 
         //Determine if chunk is largest
-        if(lChunk > currHead->size)
-            lChunk = currHead->size;
+        if(lChunk < *(currHead->curr))
+            lChunk = *(currHead->curr);
 
         //Move to next element
         currHead = currHead->next;
@@ -407,155 +411,4 @@ void getFreeMemStats(struct memHead* freeList, int* freeSize, int* freeChunks, i
     *freeChunks = fChunks;
     *smallestChunk = sChunk;
     *largestChunk = lChunk;
-    }
-
-
-/*******************************************************************
-** setNewMemHead -- will set a new header of the specified list 
-**
-** @param[in]  newNode          memHead node to be set as the new head 
-** @param[in]  newNodeSize      the size of the memHead to be set 
-** @param[in]  oldHead          The old head to be switched with newNode
-**
-********************************************************************/
-void setNewMemHead(struct memHead* newNode, int size, struct memHead** oldHead) 
-    {
-    newNode->size = size;
-    newNode->next = *oldHead;
-    *oldHead = newNode;
-    }
-
-
-/*******************************************************************
-** setNewMemHead -- will set a new header of the specified list 
-**
-** @param[in]  listHead     head of the list to remove element from
-** @param[in]  toRemove     node of list to be removed 
-**
-********************************************************************/
-void removeMemHead(struct memHead** listHead, struct memHead* toRemove) 
-    {
-    //Start at head of list
-    struct memHead* currHead = *listHead;
-
-    //Make sure the head is not what we are removing
-    if(*listHead != toRemove)
-        {
-        while(currHead->next != toRemove)
-            {
-            currHead = currHead->next;
-            }
-
-        //Change the next pointer to skip over deallocated block
-        currHead->next = toRemove->next;
-        }
-    else 
-        {
-        //Change the head of the list
-        *listHead = toRemove->next;
-        }
-    }
-
-
-/*******************************************************************
-** alterMemHead -- Moves the available memory header to a new location
-**
-** @param[in]  listHead     head of the list to alter an element from
-** @param[in]  toAlter      node of list to be altered
-** @param[in]  size         size of memory taken away from the free block
-**
-********************************************************************/
-void alterMemHead(struct memHead** listHead, struct memHead* toAlter, int size)
-    {
-    //Start at head of list
-    struct memHead* currHead = *listHead;
-
-    //Make sure the head is not what we are altering
-    if(*listHead != toAlter)
-        {
-    	//Find toAlter node in the list
-        while(currHead->next != toAlter)
-            {
-            currHead = currHead->next;
-            }
-
-        //Change the next pointer to point to the block following this
-        memcpy(toAlter, toAlter + size + HEADER_SIZE, HEADER_SIZE);
-
-        //Keep linked list linked
-        currHead->next = toAlter + size;
-
-        //Fix size change when allocating this block
-        (toAlter+size)->size = toAlter->size - size - HEADER_SIZE;
-        }
-    else
-        {
-        //Change the head of the list
-        *listHead = toAlter + size + HEADER_SIZE;
-        (*listHead)->size = toAlter->size - size - HEADER_SIZE;
-        }
-    }
-
-/*******************************************************************
-** compact_allocation -- groups allocated memory blocks to compact memory block
-**
-** @param[in]   listHead       head of linked list to be sorted
-**
-********************************************************************/
-void sortList( struct memHead **listHead )
-    {
-    struct memHead* oldListHead = *listHead;
-    struct memHead* tempHead = NULL;
-    struct memHead* tempTail = NULL;
-    void* traverser;
-    void* traverser_prev;
-    void* leastAddr = oldListHead;
-    void* leastAddr_prev = NULL;
-
-    //While our oldList still points to memHeads
-    while(oldListHead != NULL)
-        {
-        traverser = oldListHead;
-
-        //Find the smallest address 
-        while(traverser != NULL)
-            {
-            if(traverser <= leastAddr)
-                {
-                leastAddr_prev = traverser_prev;
-                leastAddr = traverser;              //Set the smallest address
-                }
-
-            traverser_prev = traverser;
-            traverser = ((struct memHead*)traverser)->next;
-            }
-        //We now have the smallest address
-
-        //Remove the element from the list -- special case if element was head
-        if(leastAddr == oldListHead)
-            {
-            oldListHead = oldListHead->next;
-            }
-        else 
-            {
-            ((struct memHead*)leastAddr_prev)->next = ((struct memHead*)leastAddr)->next;
-            }
-
-        //Move element to new list -- specical case if new list is empty
-        if(tempHead == NULL)
-            {
-            tempHead = (struct memHead*)leastAddr;
-            tempTail = (struct memHead*)leastAddr;
-            ((struct memHead*)leastAddr)->next = NULL;
-            }
-        else 
-            {
-            tempTail->next = (struct memHead*)leastAddr;
-            tempTail = tempTail->next;
-            ((struct memHead*)leastAddr)->next = NULL;
-            }
-        }
-
-    //Set the new header of the list
-    *listHead = tempHead;
     }

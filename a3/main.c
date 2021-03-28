@@ -7,6 +7,7 @@
 
 /***INCLUDES******************************************************************/
 #include <stdio.h>
+
 #include "myalloc.h"
 
 
@@ -37,7 +38,7 @@
 ********************************************************************/
 int main(int argc, char* argv[]) 
     {
-    initialize_allocator(1000, FIRST_FIT);
+    initialize_allocator(100, FIRST_FIT);
     // initialize_allocator(100, BEST_FIT);
     // initialize_allocator(100, WORST_FIT);
     printf("Using first fit algorithm on memory size 100\n");
