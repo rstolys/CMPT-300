@@ -15,14 +15,17 @@
 
 
 /***DEFINES*******************************************************************/
+#define ERROR              -1
+#define SUCCESS             0
+#define FAILURE             1
 //#define DEBUG     //For debugging 
 
-#define HEADER_SIZE  sizeof(struct memHead)
+#define HEADER_SIZE  sizeof(int)
 
 /***GLOBAL VARIABLES**********************************************************/
 struct memHead{
-    int size;
-    void* next;
+    int* curr;
+    struct memHead* next;
 };
 
 struct Myalloc {
@@ -63,22 +66,31 @@ void sortList(struct memHead** head);
 ********************************************************************/
 void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm) 
     {
-    assert(_size > HEADER_SIZE);     //WIll this pass the test cases
+    assert(_size > HEADER_SIZE);     //Will this pass the test cases
     myalloc.aalgorithm = _aalgorithm;
     myalloc.size = _size;
-    //TODO: Ensure MALLOC doesnt fail **
-    myalloc.memory = malloc((size_t)myalloc.size);
     myalloc.allocList = NULL;
 
+    //Allocate memory and set it to empty 
+    if(-1 == (myalloc.memory = malloc((size_t)myalloc.size)))
+        {
+        printf("Initialization memory allocation failed.\n");
+        exit(ERROR);
+        }
+    
     memset(myalloc.memory, 0, _size);
 
-    //Add freeList struct
-    struct memHead first; 
-    first.size = _size - HEADER_SIZE;
-    first.next = NULL;
-    *(struct memHead*)(myalloc.memory) = first;
 
-    myalloc.freeList = (struct memHead*)myalloc.memory;
+    //Set the first header of the memory
+    int freeSpace = _size - HEADER_SIZE;
+    memcpy(myalloc.memory, &freeSpace, HEADER_SIZE);
+
+    //Create freeList header in memory block
+    struct memHead* first = malloc(sizeof(struct memHead));
+    first->curr = (int*) myalloc.memory;        
+    first->next = NULL;
+
+    myalloc.freeList = &first;
     }
 
 /*******************************************************************
