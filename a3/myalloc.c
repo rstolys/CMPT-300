@@ -117,7 +117,7 @@ void* allocate(int _size)
                 if(_size <= *(availableMem->curr))
                     {
                     //Set the return address and exit from loop to set the header
-                    ptr = availableMem->curr + HEADER_SIZE;
+                    ptr = (void*)((char*)availableMem->curr + HEADER_SIZE);
                     break;
                     }
                 else
@@ -155,16 +155,23 @@ void deallocate(void* _ptr)
     assert(_ptr != NULL);
 
     //Get reference to header
-    struct memHead* oldHead = (struct memHead*)((int*)_ptr - HEADER_SIZE);
+    struct memHead* allocBlock = List_findAllocNode(&myalloc.allocList, _ptr);
+
+    //If we couldn't find the node in the alloc list
+    if(allocBlock == NULL)
+        {
+        printf("Memory could not be found. Unable to deallocate\n");
+        exit(ERROR);
+        }
 
     //Remove the allocated block and add it to the free list
-    List_allocToFree(&myalloc.allocList, &myalloc.freeList, oldHead);
+    List_allocToFree(&myalloc.allocList, &myalloc.freeList, allocBlock);
 
     //Clear allocated memory
-    memset(_ptr, 0, *(oldHead->curr));
+    memset(_ptr, 0, *(allocBlock->curr));
 
     //Check for back to back free blocks in free list
-    List_combineNeighbours(&myalloc.freeList, oldHead);
+    List_combineNeighbours(&myalloc.freeList, allocBlock);
     }
 
 
@@ -195,12 +202,12 @@ int compact_allocation(void** _before, void** _after)
         if(freeHeader == NULL || allocHeader->curr < freeHeader->curr)
             {
             //Set the location of the memory before compaction
-            _before[ptrNum] = allocHeader->curr + HEADER_SIZE;
+            _before[ptrNum] = (void*)((char*)allocHeader->curr + HEADER_SIZE);
        
             if(nextFreeMem == NULL)
                 {
                 //We are not moving the memory, set the after pointer
-                _after[ptrNum] = allocHeader->curr + HEADER_SIZE;
+                _after[ptrNum] = (void*)((char*)allocHeader->curr + HEADER_SIZE);
                 }
             else 
                 {
@@ -211,13 +218,13 @@ int compact_allocation(void** _before, void** _after)
                 memmove(nextFreeMem, allocHeader->curr, currSize + HEADER_SIZE);
 
                 //Set the after pointer for the user
-                _after[ptrNum] = nextFreeMem + HEADER_SIZE;
+                _after[ptrNum] = (void*)((char*)nextFreeMem + HEADER_SIZE);
 
                 //Update the allocList
-                allocHeader->curr = nextFreeMem;
+                allocHeader->curr = (int*)nextFreeMem;
 
                 //Set the location of the nextFreeMem and the headers size
-                nextFreeMem += currSize + HEADER_SIZE;
+                nextFreeMem = (void*)((char*)nextFreeMem + currSize + HEADER_SIZE);
                 }
             
             //Update the current alloc header

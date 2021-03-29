@@ -52,13 +52,14 @@ void List_insertTail( struct memHead** headRef, struct memHead* node){
         return;
     }
     
-    /* First node not NULL, traverse the linked list until next node is NULL (end of the list) */
+    //First node not NULL, traverse the linked list until next node is NULL (end of the list)
     while(currNode->next != NULL){
         currNode = currNode->next;
     }
 
-    /* Add the node to the end of the list */
+    //Add the node to the end of the list
     currNode->next = node;
+    node->next = NULL;
 }
 
 /* 
@@ -96,48 +97,69 @@ struct memHead* List_findFreeNode( struct memHead* head, int desireSize ){
  * Return the node that matches the address provided.
  *      The address provided points to data element in front of header
  */
-struct memHead* List_findAllocNode( struct memHead* head, void* data ){
-    while((head->curr + HEADER_SIZE) != data && head->next != NULL){
-        head = head->next;
-    }
-    if((head->curr + HEADER_SIZE) == data){
-        return head;
-    } else {
-        return NULL;
-    }
-}
+/*******************************************************************
+** List_findAllocNode -- Return the node that matches the header address provided.
+**                          The address provided points to data element in front of header
+**
+** @param[in]  allocRef     address to linked list of allocated block memHeads   
+** @param[in]  data         address of data of desired block
+**
+********************************************************************/
+struct memHead* List_findAllocNode(struct memHead** allocRef, void* data)
+    {
+    struct memHead* temp = *allocRef;
 
-/* 
- * Find the node to remove from the alloc list
- *  moves node to the free list
- */
-void List_allocToFree( struct memHead** allocRef, struct memHead** freeRef, struct memHead* node ){
+    //Find the the alloc node that points to our data or node doesn't exist
+    while(temp != NULL && (void*)((char*)temp->curr + HEADER_SIZE) != data)
+        {
+        temp = temp->next;
+        }
+
+    //Return desired node or NULL 
+    return temp;
+    }
+
+
+/*******************************************************************
+** List_allocToFree -- Find the node to remove from the alloc list
+**                          moves node to the free list
+**
+** @param[in]  allocRef     address to linked list of allocated block memHeads   
+** @param[in]  freeRef      address to linked list of free block memHeads
+** @param[in]  node         node in allocated linked list that points to memory we want to free    
+**
+********************************************************************/
+void List_allocToFree( struct memHead** allocRef, struct memHead** freeRef, struct memHead* node )
+    {
     struct memHead* temp = NULL;
     struct memHead* prevNode = NULL;   
 
-    // Remove node from alloc list
-    if(*allocRef == node){
+    //if node to remove is header node
+    if(*allocRef == node)
+        {
         //Move head node to next element
         temp = *allocRef;
         *allocRef = temp->next;
-    } else{
+        } 
+    else        //Node is not the head element
+        {
         temp = (*allocRef)->next;
         prevNode = *allocRef;
 
         //Find node to remove
-        while(temp != node && temp != NULL){
+        while(temp != node && temp != NULL)
+            {
             prevNode = temp; 
             temp = temp->next;
-        }
+            }
 
         //Remove the node from the list
         prevNode->next = temp->next;
-    }
+        }
 
-    
     //Insert node to tail of free list
     List_insertTail(freeRef, node); 
-}
+    }
 
 
 /*******************************************************************
@@ -147,7 +169,7 @@ void List_allocToFree( struct memHead** allocRef, struct memHead** freeRef, stru
 **                          Creates new node and adds it to alloc list
 **
 ** @param[in]  freeRef      address to linked list of free block memHeads   
-** @param[in]  allocref     address to linked list of allocated block memHeads
+** @param[in]  allocRef     address to linked list of allocated block memHeads
 ** @param[in]  node         node in free linked list that points to memory we want to allocate
 ** @param[in]  size         size of memory to be allocated        
 **
@@ -185,8 +207,8 @@ void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struc
             int* headerAddr = node->curr;       //Get the address of the header
 
             //Move the header pointer to the new location
-            node->curr = node->curr + size + HEADER_SIZE;
-
+            node->curr = (int*)((char*)node->curr + size + HEADER_SIZE);
+            
             //Set the new size of the free block
             int newSize = freeSize - size - HEADER_SIZE;
             memcpy(node->curr, &newSize, HEADER_SIZE);
@@ -222,7 +244,7 @@ void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struc
             int* headerAddr = node->curr;       //Get the address of the header
 
             //Move the header pointer to the new location
-            node->curr = node->curr + size + HEADER_SIZE;
+            node->curr = (int*)((char*)node->curr + size + HEADER_SIZE);
 
             //Set the new size of the free block
             int newSize = freeSize - size - HEADER_SIZE;
@@ -248,9 +270,14 @@ void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struc
         }
     }
 
-/* 
- * Determine if there are consecutive free blocks and combine them together 
- */
+
+/*******************************************************************
+** List_combineNeighbours -- Determine if there are consecutive free blocks and combine them together 
+**
+** @param[in]  listRef      address to linked list of memHeads   
+** @param[in]  oldHead      address to block to be combined with neighbours     
+**
+********************************************************************/
 void List_combineNeighbours(struct memHead** listRef, struct memHead* oldHead)
     {
     struct memHead* prevNode = NULL;
@@ -274,7 +301,7 @@ void List_combineNeighbours(struct memHead** listRef, struct memHead* oldHead)
     if(currNode != NULL)
         {
         //Determine if the next block is availible to combine
-        if(nextNode != NULL && (void*)(currNode->curr + *(currNode->curr) + HEADER_SIZE) == (void*)nextNode)
+        if(nextNode != NULL && (void*)((char*)currNode->curr + *(currNode->curr) + HEADER_SIZE) == (void*)nextNode)
             {
             //Combine these two blocks
             *(currNode->curr) += *(nextNode->curr);
@@ -286,7 +313,7 @@ void List_combineNeighbours(struct memHead** listRef, struct memHead* oldHead)
             }
 
         //Determine if the previous block is availible to combine
-        if(prevNode != NULL && (void*)(prevNode->curr + *(prevNode->curr) + HEADER_SIZE) == (void*)currNode) 
+        if(prevNode != NULL && (void*)((char*)prevNode->curr + *(prevNode->curr) + HEADER_SIZE) == (void*)currNode) 
             {
             //Combine the two blocks 
             *(prevNode->curr) += *(currNode->curr);
@@ -300,9 +327,12 @@ void List_combineNeighbours(struct memHead** listRef, struct memHead* oldHead)
     }
 
 
-/* 
- * Delete all the elements from the list
- */
+/*******************************************************************
+** List_delete -- Delete all the elements from the list
+**
+** @param[in]  listRef      address to linked list of memHeads to be deleted    
+**
+********************************************************************/
 void List_delete( struct memHead** listRef ) {
     struct memHead* temp = NULL;
     struct memHead* nextNode = *listRef;

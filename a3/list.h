@@ -47,7 +47,7 @@ struct memHead* List_findFreeNode( struct memHead* head, int desireSize );
  * Return the node that matches the address provided.
  *      The address provided points to data element in front of header
  */
-struct memHead* List_findAllocNode( struct memHead* head, void* data );
+struct memHead* List_findAllocNode( struct memHead** allocRef, void* data );
 
 /* 
  * Find the node to remove from the alloc list
