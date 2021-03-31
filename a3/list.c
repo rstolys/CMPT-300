@@ -17,7 +17,7 @@
 ** @param[out] struct_memHead*      Newly created memHead noede 
 **
 ********************************************************************/
-struct memHead* List_createNode(int* size)
+struct memHead* List_createNode(int64_t* size)
     {
     struct memHead* newNode = (struct memHead*) malloc( 1*sizeof(struct memHead) );
 
@@ -174,7 +174,7 @@ void List_allocToFree( struct memHead** allocRef, struct memHead** freeRef, stru
 ** @param[in]  size         size of memory to be allocated        
 **
 ********************************************************************/
-void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struct memHead* node, int size)
+void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struct memHead* node, int64_t size)
     {
     struct memHead* temp = NULL;
     struct memHead* prevNode = NULL;   
@@ -203,14 +203,14 @@ void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struc
             }
         else 
             {
-            int freeSize = *(node->curr);       //Get the size of the free space
-            int* headerAddr = node->curr;       //Get the address of the header
+            int64_t freeSize = *(node->curr);       //Get the size of the free space
+            int64_t* headerAddr = node->curr;       //Get the address of the header
 
             //Move the header pointer to the new location
-            node->curr = (int*)((char*)node->curr + size + HEADER_SIZE);
+            node->curr = (int64_t*)((char*)node->curr + size + HEADER_SIZE);
             
             //Set the new size of the free block
-            int newSize = freeSize - size - HEADER_SIZE;
+            int64_t newSize = freeSize - size - HEADER_SIZE;
             memcpy(node->curr, &newSize, HEADER_SIZE);
 
             //Set the size of the allocated block, create new node to add to the alloc list
@@ -240,14 +240,14 @@ void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struc
             }
         else        //The available free memory is greater than the needed space
             {
-            int freeSize = *(node->curr);       //Get the size of the free space
-            int* headerAddr = node->curr;       //Get the address of the header
+            int64_t freeSize = *(node->curr);       //Get the size of the free space
+            int64_t* headerAddr = node->curr;       //Get the address of the header
 
             //Move the header pointer to the new location
-            node->curr = (int*)((char*)node->curr + size + HEADER_SIZE);
+            node->curr = (int64_t*)((char*)node->curr + size + HEADER_SIZE);
 
             //Set the new size of the free block
-            int newSize = freeSize - size - HEADER_SIZE;
+            int64_t newSize = freeSize - size - HEADER_SIZE;
             memcpy(node->curr, &newSize, HEADER_SIZE);
 
             //printf("\n(*freeRef)->curr: %p, node->curr: %p\n", (*freeRef)->curr, node->curr);
@@ -280,6 +280,9 @@ void List_freeToAlloc(struct memHead** freeRef, struct memHead** allocRef, struc
 ********************************************************************/
 void List_combineNeighbours(struct memHead** listRef, struct memHead* oldHead)
     {
+    //Need sorted list 
+    List_sort(listRef);
+
     struct memHead* prevNode = NULL;
     struct memHead* currNode = *listRef;
     struct memHead* nextNode = (*listRef)->next;
@@ -301,27 +304,27 @@ void List_combineNeighbours(struct memHead** listRef, struct memHead* oldHead)
     if(currNode != NULL)
         {
         //Determine if the next block is availible to combine
-        if(nextNode != NULL && (void*)((char*)currNode->curr + *(currNode->curr) + HEADER_SIZE) == (void*)nextNode)
+        if(nextNode != NULL && (void*)((char*)currNode->curr + *(currNode->curr) + HEADER_SIZE) == (void*)(nextNode->curr))
             {
             //Combine these two blocks
-            *(currNode->curr) += *(nextNode->curr);
+            *(currNode->curr) += *(nextNode->curr) + HEADER_SIZE;
             currNode->next = nextNode->next;
-            memset(nextNode, 0, HEADER_SIZE);       //Clear the header from the memory block
+            memset(nextNode->curr, 0, HEADER_SIZE);       //Clear the header from the memory block
             
             //Free the memory for the nextNode 
             free(nextNode);
             }
 
         //Determine if the previous block is availible to combine
-        if(prevNode != NULL && (void*)((char*)prevNode->curr + *(prevNode->curr) + HEADER_SIZE) == (void*)currNode) 
+        if(prevNode != NULL && (void*)((char*)prevNode->curr + *(prevNode->curr) + HEADER_SIZE) == (void*)(currNode->curr)) 
             {
             //Combine the two blocks 
-            *(prevNode->curr) += *(currNode->curr);
+            *(prevNode->curr) += *(currNode->curr) + HEADER_SIZE;
             prevNode->next = currNode->next;
-            memset(nextNode, 0, HEADER_SIZE);       //Clear the header from the memory block
+            memset(currNode->curr, 0, HEADER_SIZE);       //Clear the header from the memory block
 
             //Free the memory for the currNode 
-            free(nextNode);
+            free(currNode);
             }
         }
     }
@@ -364,21 +367,24 @@ void List_sort( struct memHead **listHead )
     struct memHead* tempTail = NULL;
     struct memHead* traverser;
     struct memHead* traverser_prev = NULL;
-    void* leastAddr = oldListHead->curr;
-    void* leastAddr_prev = NULL;
+    struct memHead* leastAddr = oldListHead;
+    struct memHead* leastAddr_prev = NULL;
 
     //While our oldList still points to memHeads
     while(oldListHead != NULL)
         {
-        traverser = oldListHead;
+        traverser = oldListHead->next;
+        traverser_prev = oldListHead;
+        leastAddr = oldListHead;
+        leastAddr_prev = NULL;
 
         //Find the smallest address 
         while(traverser != NULL)
             {
-            if(traverser->curr <= (int*)leastAddr)
+            if(traverser->curr <= leastAddr->curr)
                 {
-                leastAddr_prev = (traverser_prev == NULL) ? NULL : traverser_prev->curr;
-                leastAddr = traverser->curr;              //Set the smallest address
+                leastAddr_prev = traverser_prev;
+                leastAddr = traverser;              //Set the smallest address
                 }
 
             traverser_prev = traverser;
@@ -387,27 +393,27 @@ void List_sort( struct memHead **listHead )
         //We now have the smallest address
 
         //Remove the element from the list -- special case if element was head
-        if(leastAddr == oldListHead->curr)
+        if(leastAddr->curr == oldListHead->curr)
             {
             oldListHead = oldListHead->next;
             }
         else 
             {
-            ((struct memHead*)leastAddr_prev)->next = ((struct memHead*)leastAddr)->next;
+            leastAddr_prev->next = leastAddr->next;
             }
 
         //Move element to new list -- specical case if new list is empty
         if(tempHead == NULL)
             {
-            tempHead = (struct memHead*)leastAddr;
-            tempTail = (struct memHead*)leastAddr;
-            ((struct memHead*)leastAddr)->next = NULL;
+            tempHead = leastAddr;
+            tempTail = leastAddr;
+            leastAddr->next = NULL;
             }
         else 
             {
-            tempTail->next = (struct memHead*)leastAddr;
+            tempTail->next = leastAddr;
             tempTail = tempTail->next;
-            ((struct memHead*)leastAddr)->next = NULL;
+            leastAddr->next = NULL;
             }
         }
 

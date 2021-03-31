@@ -12,13 +12,13 @@
 //NONE
 
 /***DEFINES*******************************************************************/
-#define HEADER_SIZE  sizeof(int)
+#define HEADER_SIZE  sizeof(int64_t)
 
 
 /***GLOBAL VARIABLES**********************************************************/
 
 struct memHead{
-    int* curr;
+    int64_t* curr;
     struct memHead* next;
 };
 

@@ -20,7 +20,7 @@
  * Allocate memory for a node of type strct nodeStruct and initialize it with the value
  * item. Return a pointer to the new node
  */
-struct memHead* List_createNode(int* size);
+struct memHead* List_createNode(int64_t* size);
 
 /* 
  * Insert node at the head of the list
@@ -62,7 +62,7 @@ void List_allocToFree( struct memHead** allocRef, struct memHead** freeRef, stru
  *  block or moving block to new start of free memory chunk
  *  Creates new node and adds it to alloc list
  */
-void List_freeToAlloc( struct memHead** freeRef, struct memHead** allocRef, struct memHead* node, int size );
+void List_freeToAlloc( struct memHead** freeRef, struct memHead** allocRef, struct memHead* node, int64_t size );
 
 /* 
  * Determine if there are consecutive free blocks and combine them together 
