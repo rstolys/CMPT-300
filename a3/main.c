@@ -390,6 +390,7 @@ void test4(enum allocation_algorithm _aalgorithm)
         }
 
     destroy_allocator();
+	free(factory_num);
     }
 
 

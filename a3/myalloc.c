@@ -31,7 +31,7 @@ struct Myalloc {
     void* memory;
     struct memHead* freeList;
     struct memHead* allocList;
-    _Bool initalized;
+    _Bool initialized;
 };
 
 struct Myalloc myalloc;
@@ -62,7 +62,7 @@ void removeMemHead(struct memHead** listHead, struct memHead* toRemove);
 ********************************************************************/
 void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm) 
     {
-    if(myalloc.initalized)
+    if(myalloc.initialized)
         {
         printf("myalloc already initialized for %d bytes of memory\n", myalloc.size);
         }
@@ -95,6 +95,8 @@ void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm)
 
         //Create freeList header in memory block
         myalloc.freeList = List_createNode((int64_t*)myalloc.memory);
+	
+	myalloc.initialized = true;
         }
     else 
         {
@@ -133,6 +135,8 @@ void destroy_allocator()
         free(toFree);
         toFree = allocBlock;
         }
+	
+	myalloc.initialized = false;
     }
 
 
