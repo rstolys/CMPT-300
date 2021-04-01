@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include "myalloc.h"
 
@@ -443,9 +444,9 @@ int main(int argc, char* argv[])
     test3(BEST_FIT);
     test3(WORST_FIT);
 
-    test4(FIRST_FIT);
-    test4(BEST_FIT);
-    test4(WORST_FIT);
+//    test4(FIRST_FIT);
+  //  test4(BEST_FIT);
+    //test4(WORST_FIT);
    
     initialize_allocator(100, FIRST_FIT);
     //initialize_allocator(100, BEST_FIT);

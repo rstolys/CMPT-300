@@ -1,8 +1,8 @@
 TARGET = myalloc
 OBJS = main.o myalloc.o list.o
 
-CFLAGS = -Wall -g -std=c99 -D_POSIX_C_SOURCE=199309L
-CC = gcc
+CFLAGS = -Wall -g -std=c99 -D_POSIX_C_SOURCE=199309L -lrt
+CC = gcc -pthread
 
 all: clean $(TARGET) #test
 

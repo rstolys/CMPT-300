@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdint.h>
 
 #include "myalloc.h"
 #include "list.h"
@@ -319,7 +320,6 @@ int compact_allocation(void** _before, void** _after)
     int ptrNum = 0;
     struct memHead* allocHeader = myalloc.allocList;
     struct memHead* freeHeader = myalloc.freeList;
-    struct memHead* prevAllocHeader = NULL;
 
     while(allocHeader != NULL)
         {
@@ -352,7 +352,6 @@ int compact_allocation(void** _before, void** _after)
                 }
             
             //Update the current alloc header
-            prevAllocHeader = allocHeader;
             allocHeader = allocHeader->next;
             ptrNum++;
             }
@@ -396,7 +395,7 @@ int compact_allocation(void** _before, void** _after)
         List_delete(&myalloc.freeList);
     
         //Condense remaining free memeory and set the free memory head
-        myalloc.freeList = nextFreeMem;
+//        myalloc.freeList = nextFreeMem;
 
         //Set the size of the free block
         memcpy(nextFreeMem, &freeMemSize, HEADER_SIZE);
@@ -405,7 +404,7 @@ int compact_allocation(void** _before, void** _after)
         struct memHead* newHeader = List_createNode((int64_t*) nextFreeMem);
 
         myalloc.freeList = newHeader;
-        memset(myalloc.freeList + HEADER_SIZE, 0, freeMemSize - HEADER_SIZE);
+        memset(myalloc.freeList->curr + HEADER_SIZE, 0, freeMemSize - HEADER_SIZE);
         }
     
     //Unlock section
