@@ -7,7 +7,11 @@
 
 /***INCLUDES******************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include "myalloc.h"
 
@@ -22,10 +26,10 @@
 
 
 /***GLOBAL VARIABLES**********************************************************/
-
+_Bool allocateMemory_gv = false;
 
 /***FUNCTION DECLARATIONS*****************************************************/
-
+void* alloc_factory(void* param);
 
 /***FUNCTION DEFINITIONS******************************************************/
 
@@ -351,8 +355,72 @@ void test3(enum allocation_algorithm _aalgorithm)
 ********************************************************************/
 void test4(enum allocation_algorithm _aalgorithm) 
     {
+    pthread_t* factory_num;
+    allocateMemory_gv = true;
+
+    if(NULL == (factory_num = malloc(sizeof(pthread_t) * 2)))
+        {
+        //Print error message - not enough memory
+        exit(ERROR);
+        }
+
+    initialize_allocator(100, _aalgorithm);
+
+    for(int f = 0; f < 2; f++)
+        {
+        //Create thread with factory number f
+        int failed = pthread_create(&(factory_num[f]), NULL, alloc_factory, NULL);
+
+        if(failed)
+            {
+            //Indicate some error occured
+            exit(ERROR);
+            }
+        }    
+
+    //Wait for threads to do stuff
+    sleep(2);
+
+    //Call threads back to us
+    allocateMemory_gv = false;        //Indicate to threads to stop their processing
+    for(int f = 0; f < 2; f++)
+        {
+        pthread_join(factory_num[f], NULL);
+        }
+
+    destroy_allocator();
     }
 
+
+/*******************************************************************
+** alloc_factory -- memory generation factory
+**
+** @param none
+**
+********************************************************************/
+void* alloc_factory(void* param)
+    {
+    int* p1 = NULL;
+    int* p2 = NULL;
+
+    while(allocateMemory_gv)
+        {
+         //Allocate Memory
+        if(p1 == NULL)
+            p1 = allocate(sizeof(int));
+
+        if(p2 == NULL)
+            p2 = allocate(sizeof(int));
+
+        //Deallocate Memory
+        deallocate(p1);
+        deallocate(p2);
+        p1 = NULL;
+        p2 = NULL;
+        }
+
+    return NULL;
+    }
 
 /*******************************************************************
 ** MAIN FUNCTION -- test program
@@ -374,6 +442,10 @@ int main(int argc, char* argv[])
     test3(FIRST_FIT);
     test3(BEST_FIT);
     test3(WORST_FIT);
+
+    test4(FIRST_FIT);
+    test4(BEST_FIT);
+    test4(WORST_FIT);
    
     initialize_allocator(100, FIRST_FIT);
     //initialize_allocator(100, BEST_FIT);
