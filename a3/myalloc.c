@@ -393,9 +393,6 @@ int compact_allocation(void** _before, void** _after)
         {
         //Remove elements from free list
         List_delete(&myalloc.freeList);
-    
-        //Condense remaining free memeory and set the free memory head
-//        myalloc.freeList = nextFreeMem;
 
         //Set the size of the free block
         memcpy(nextFreeMem, &freeMemSize, HEADER_SIZE);
@@ -404,7 +401,8 @@ int compact_allocation(void** _before, void** _after)
         struct memHead* newHeader = List_createNode((int64_t*) nextFreeMem);
 
         myalloc.freeList = newHeader;
-        memset(myalloc.freeList->curr + HEADER_SIZE, 0, freeMemSize - HEADER_SIZE);
+        void* memToClear = (void*)((char*)myalloc.freeList->curr + HEADER_SIZE);
+        memset(memToClear, 0, freeMemSize - HEADER_SIZE);
         }
     
     //Unlock section
