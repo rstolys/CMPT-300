@@ -2,6 +2,10 @@
     "files.associations": {
         "typeinfo": "cpp",
         "stdlib.h": "c",
-        "myalloc.h": "c"
+        "myalloc.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "ranges": "c"
     }
 }
