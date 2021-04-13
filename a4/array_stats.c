@@ -6,10 +6,10 @@
  -----------------------------------------------------------------------------*/
 
 /***INCLUDES******************************************************************/
-#include <stdio.h>
-#include <errno.h>
+#include <linux/errno.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/syscalls.h>
 
 #include "array_stats.h"
 
@@ -37,12 +37,13 @@
 ** @param[out]  stats       the output array_stats
 **
 ********************************************************************/
-asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size)
+SYSCALL_DEFINE3(array_stats, struct array_stats*, stats, long*, data, long, size)
     {
     //Define local variables
-    int                     rv = SUCCESS;
-    long                    tempMem;
-    struct array_stats*     arrStats;
+    long                        rv = SUCCESS;
+    long                	i = 1;
+    long                        tempMem = 0;
+    struct array_stats          arrStats = {0};
 
     //Print inputs
     printk(KERN_INFO "INPUTS OF SYS_ARRAY_STATS: *stats: %p, *data: %p, size: %ld\n", stats, data, size); 
@@ -60,21 +61,21 @@ asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size
         rv = -EFAULT;
         }
     // Output pointer is null or invalid for user
-    else if(stats == NULL || (0 != copy_from_user(arrStats, stats, sizeof(struct array_stats))))
+    else if(stats == NULL || (0 != copy_from_user(&arrStats, stats, sizeof(struct array_stats))))
         {
         printk(KERN_ERR "Invalid input: stats\n"); 
         rv = -EFAULT;
         }
-    else 
+    else
         {
         //All of our inputs are valid, we can access the array values to determine statistics
 
         //Initialize array_stats values with first value in array
-        arrStats->min = tempMem;
-        arrStats->max = tempMem;
-        arrStats->sum = tempMem;
+        arrStats.min = tempMem;
+        arrStats.max = tempMem;
+        arrStats.sum = tempMem;
 
-        for(long i = 1; i < size; i++)
+        for(; i < size; i++)
             {
             if(0 != copy_from_user(&tempMem, data + i, sizeof(long)))
                 {
@@ -82,28 +83,28 @@ asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size
                 rv = -EFAULT;
                 break;
                 }
-            else 
+            else
                 {
                  //Check and set min value
-                if(arrStats->min > tempMem)
-                    arrStats->min = tempMem;
+                if(arrStats.min > tempMem)
+                    arrStats.min = tempMem;
 
                 //Check and set max value
-                if(arrStats->max < tempMem)
-                    arrStats->max = tempMem;
+                if(arrStats.max < tempMem)
+                    arrStats.max = tempMem;
 
                 //Increase the sum of the array values
-                arrStats->sum += tempMem;
+                arrStats.sum += tempMem;
                 }
             }
 
         //Set the array stats output if we are here without here (rv is still == SUCCESS)
-        if(rv == SUCCESS && 0 != copy_to_user(stats, arrStats, sizeof(struct array_stats)))
+        if(rv == SUCCESS && 0 != copy_to_user(stats, &arrStats, sizeof(struct array_stats)))
             {
             printk(KERN_ERR "Invalid copy of array_stats to user\n"); 
             rv = -EFAULT;
             }
         }
-
+	rv = 0;
     return rv;
     }
