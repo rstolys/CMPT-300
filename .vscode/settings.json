@@ -8,6 +8,7 @@
         "string_view": "c",
         "ranges": "c",
         "random": "c",
-        "limits": "c"
+        "limits": "c",
+        "process_ancestors.h": "c"
     }
 }
