@@ -105,6 +105,6 @@ SYSCALL_DEFINE3(array_stats, struct array_stats*, stats, long*, data, long, size
             rv = -EFAULT;
             }
         }
-	rv = 0;
+
     return rv;
     }
