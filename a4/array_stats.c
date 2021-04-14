@@ -6,10 +6,10 @@
  -----------------------------------------------------------------------------*/
 
 /***INCLUDES******************************************************************/
-#include <stdio.h>
-#include <errno.h>
+#include <linux/errno.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/syscalls.h>
 
 #include "array_stats.h"
 
@@ -37,12 +37,13 @@
 ** @param[out]  stats       the output array_stats
 **
 ********************************************************************/
-asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size)
+SYSCALL_DEFINE3(array_stats, struct array_stats*, stats, long*, data, long, size)
     {
     //Define local variables
-    int                     rv = SUCCESS;
-    long                    tempMem = 0;
-    struct array_stats      arrStats = {0};
+    long                        rv = SUCCESS;
+    long                	    i = 1;
+    long                        tempMem = 0;
+    struct array_stats          arrStats = {0};
 
     //Print inputs
     printk(KERN_INFO "INPUTS OF SYS_ARRAY_STATS: *stats: %p, *data: %p, size: %ld\n", stats, data, size); 
@@ -65,7 +66,7 @@ asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size
         printk(KERN_ERR "Invalid input: stats\n"); 
         rv = -EFAULT;
         }
-    else 
+    else
         {
         //All of our inputs are valid, we can access the array values to determine statistics
 
@@ -74,7 +75,7 @@ asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size
         arrStats.max = tempMem;
         arrStats.sum = tempMem;
 
-        for(long i = 1; i < size; i++)
+        for(; i < size; i++)
             {
             if(0 != copy_from_user(&tempMem, data + i, sizeof(long)))
                 {
@@ -82,7 +83,7 @@ asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size
                 rv = -EFAULT;
                 break;
                 }
-            else 
+            else
                 {
                  //Check and set min value
                 if(arrStats.min > tempMem)
@@ -104,6 +105,6 @@ asmlinkage long sys_array_stats(struct array_stats *stats, long *data, long size
             rv = -EFAULT;
             }
         }
-
+	rv = 0;
     return rv;
     }
