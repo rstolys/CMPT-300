@@ -46,13 +46,13 @@ SYSCALL_DEFINE3(process_ancestors, struct process_info*, info_array, long, size,
     {
     long                        rv = SUCCESS;
     long                        i = 0;
-    struct task_struct          *task_stct = current;
-    struct process_info         proc_info = NULL:
+    struct task_struct*		task_stct = current;
+    struct process_info         proc_info = {};
 
-    struct list_head            *list_element = NULL;
-    struct list_head            *list_first = NULL;
+    struct list_head*           list_element = NULL;
+    struct list_head*           list_first = NULL;
     long                        num_elements = 0;
-    long                        tempMem = NULL;
+    long                        tempMem = 0;
 
     //Print inputs
     printk(KERN_INFO "INPUTS OF SYS_PROCESS_ANCESTORS: *info_array: %p, size: %ld, *num_filled: %p, \n", info_array, size, num_filled); 
@@ -86,15 +86,15 @@ SYSCALL_DEFINE3(process_ancestors, struct process_info*, info_array, long, size,
                 proc_info.pid = task_stct->pid;
                 strcpy(proc_info.name, task_stct->comm);
                 proc_info.state = task_stct->state;
-                proc_info.uid = (long) task_stct->cred->uid;
+                proc_info.uid = (long) task_stct->cred->uid.val;
                 proc_info.nvcsw = task_stct->nvcsw;
                 proc_info.nivcsw = task_stct->nivcsw;
 
                 //
                 //Determine the number of children processes
                 //
-                list_element = (task_stct->children != NULL) ?? task_stct->children->next : NULL;
-                list_first = task_stct->children;
+                list_element = task_stct->children.next;
+                list_first = task_stct->children.prev->next;
 
                 //Increment the number of children to 1 if there are any
                 if(list_element != NULL) {num_elements++;}
@@ -111,8 +111,8 @@ SYSCALL_DEFINE3(process_ancestors, struct process_info*, info_array, long, size,
                 //Determine the number of sibling processes
                 //
                 num_elements = 0; 
-                list_element = (task_stct->sibling != NULL) ?? task_stct->sibling->next : NULL;
-                list_first = task_stct->sibling;
+                list_element = task_stct->sibling.next;
+                list_first = task_stct->sibling.prev->next;
 
                 //Increment the number of siblings to 1 if there are any
                 if(list_element != NULL) {num_elements++;}
@@ -155,17 +155,3 @@ SYSCALL_DEFINE3(process_ancestors, struct process_info*, info_array, long, size,
     printk(KERN_INFO "SYS_PROCESS_ANCESTORS: return value %ld\n", rv); 
     return rv;
     }
-
-
-/*
-struct process_info {
-	long pid;                     /* Process ID *
-	char name[ANCESTOR_NAME_LEN]; /* Program name of process *
-	long state;                   /* Current process state *
-	long uid;                     /* User ID of process owner *
-	long nvcsw;                   /* # of voluntary cotext switches *
-	long nivcsw;                  /* # of involuntary context switches *
-	long num_children;            /* # of children processes *
-	long num_siblings;            /* # of sibling processes *
-};
-*/

@@ -19,6 +19,7 @@
 
 #define _PROCESS_ANCESTORS_     438
 
+#define TEST(arg) test_internal((arg), __LINE__, #arg)
 
 /***GLOBAL VARIABLES**********************************************************/
 struct process_info {
@@ -34,7 +35,8 @@ struct process_info {
 
 
 /***FUNCTION DECLARATIONS*****************************************************/
-
+static void test_internal(_Bool success, int lineNum, char* argStr);
+static int do_syscall(struct process_info *p_info, long size, long* num_filled);
 
 /***FUNCTION DEFINITIONS******************************************************/
 
@@ -99,7 +101,6 @@ static int last_syscall_test_num_failed = -1;
 static int num_syscall_tests_failed = 0;
 
 // Macro to allow us to get the line number, and argument's text:
-#define TEST(arg) test_internal((arg), __LINE__, #arg)
 
 // Actual function used to check success/failure:
 static void test_internal(_Bool success, int lineNum, char* argStr)
