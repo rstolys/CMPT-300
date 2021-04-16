@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/syscall.h>
 
 
@@ -41,38 +42,47 @@ struct process_info {
  * Testing routines for specific test
  ***********************************************************/
 void test_error_checks()
-{
+    {
     struct process_info p_info1, p_info2, p_info3;
     long* num_filled1, num_filled2, num_filled3;
 
     //Test size errors 
-	do_syscall_failing(&p_info1, 0, num_filled1, -EINVAL);
-    do_syscall_failing(&p_info2, -1, num_filled2, -EINVAL);
-    do_syscall_failing(&p_info3, -1000, num_filled3, -EINVAL);
+	TEST(-EINVAL == do_syscall(&p_info1, 0, num_filled1));
+    TEST(-EINVAL == do_syscall(&p_info2, -1, num_filled2));
+    TEST(-EINVAL == do_syscall(&p_info3, -1000, num_filled3));
 
     //Test invalid p_info
-    do_syscall_failing(NULL, 1, num_filled1, -EFAULT);
-    do_syscall_failing(&p_info2 + sizeof(struct process_info), 1, num_filled2, -EFAULT);
-    do_syscall_failing((struct process_info*)1LL, 1, num_filled3, -EFAULT);
-    do_syscall_failing((struct process_info*)123456789012345689LL, 1, num_filled3, -EFAULT);
+    TEST(-EFAULT == do_syscall(NULL, 1, num_filled1));
+    TEST(-EFAULT == do_syscall(&p_info2 + sizeof(struct process_info), 1, num_filled2));
+    TEST(-EFAULT == do_syscall((struct process_info*)1LL, 1, num_filled3));
+    TEST(-EFAULT == do_syscall((struct process_info*)123456789012345689LL, 1, num_filled3));
 
     //Test invalid num_filled
-    do_syscall_failing(&p_info1, 1, NULL, -EFAULT);
-    do_syscall_failing(&p_info2, 1, num_filled3 + sizeof(long), -EFAULT);
-    do_syscall_failing(&p_info3, 1, (long*)1LL, -EFAULT);
-    do_syscall_failing(&p_info3, 1, (long*)123456789012345689LL, -EFAULT);
-}
+    TEST(-EFAULT == do_syscall(&p_info1, 1, NULL));
+    TEST(-EFAULT == do_syscall(&p_info2, 1, num_filled3 + sizeof(long)));
+    TEST(-EFAULT == do_syscall(&p_info3, 1, (long*)1LL));
+    TEST(-EFAULT == do_syscall(&p_info3, 1, (long*)123456789012345689LL));
+    }
+
 
 void test_basic()
-{
+    {
     struct process_info p_info;
     long* num_filled;
-	do_syscall_working(&p_info, 1, num_filled);
+	TEST(0 == do_syscall(&p_info, 1, num_filled));
+    printf("p_info pid result: %ld  vs acutal pid: %ld\n", p_info.pid, (long)getpid());
 
     struct process_info* p_info2 = malloc(3*sizeof(struct process_info));
     long* num_filled2;
-	do_syscall_working(p_info2, 3, num_filled2);
-}
+	TEST(0 == do_syscall(p_info2, 3, num_filled2));
+    printf("p_info pid result: %ld  vs acutal pid: %ld\n", p_info2[0].pid, (long)getpid());
+    
+    if(*num_filled2 > 1)
+        printf("p_info parent pid result: %ld  vs acutal parent pid: %ld\n", p_info2[1].pid, (long)getppid());
+
+    if(*num_filled2 > 2)
+        printf("p_info 2nd parent pid result: %ld\n", p_info2[2].pid);
+    }
 
 
 /***********************************************************
@@ -108,43 +118,31 @@ static void test_internal(_Bool success, int lineNum, char* argStr)
 }
 
 static void test_print_summary(void)
-{
+    {
 	printf("\nExecution finished.\n");
 	printf("%4d/%d tests passed.\n", numTestPassed, numTests);
 	printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
 	printf("%4d/%d unique sys-call testing configurations FAILED.\n", num_syscall_tests_failed, current_syscall_test_num);
-}
+    }
 
 /***********************************************************
  * Functions to actually make the sys-call and test results
  ***********************************************************/
 static int do_syscall(struct process_info *p_info, long size, long* num_filled)
-{
+    {
 	current_syscall_test_num++;
+
 	printf("\nTest %d: ..Diving to kernel level\n", current_syscall_test_num);
 	int result = syscall(_PROCESS_ANCESTORS_, p_info, size, num_filled);
-	int my_errno = errno;
 	printf("..Rising to user level w/ result = %d", result);
-	if (result < 0) {
-		printf(", errno = %d", my_errno);
-	} else {
-		my_errno = 0;
-	}
+
+	if(result < 0) 
+        {
+		printf(", errno = %d", (int)errno);
+	    } 
+
 	printf("\n");
-	return my_errno;
-
-}
-static void do_syscall_working(struct process_info* p_info, long size, long* num_filled)
-    {
-	int result = do_syscall(p_info, size, num_filled);
-
-	TEST(result == 0);
-    }
-
-static void do_syscall_failing(struct process_info* p_info, long size, long* num_filled, long ret_code)
-    {
-	int result = do_syscall(p_info, size, num_filled);
-	TEST(result == ret_code);
+	return result;
     }
 
 
@@ -163,7 +161,8 @@ int main(int argc, char* argv[])
     test_basic();
 
 	test_print_summary();
-	return 0;
+
+	return SUCCESS;
     }
 
 
