@@ -46,43 +46,65 @@ static int do_syscall(struct process_info *p_info, long size, long* num_filled);
 void test_error_checks()
     {
     struct process_info p_info1, p_info2, p_info3;
-    long* num_filled1, num_filled2, num_filled3;
+    long* num_filled1;
+	long* num_filled2;
+	long* num_filled3;
+	int result = 0;
 
     //Test size errors 
-	TEST(-EINVAL == do_syscall(&p_info1, 0, num_filled1));
-    TEST(-EINVAL == do_syscall(&p_info2, -1, num_filled2));
-    TEST(-EINVAL == do_syscall(&p_info3, -1000, num_filled3));
+	result = do_syscall(&p_info1,(long) 0, num_filled1);
+	TEST(EINVAL == errno);
+
+	result = do_syscall(&p_info1,(long) -1, num_filled1);
+	TEST(EINVAL == errno);
+
+	result = do_syscall(&p_info1,(long) -1000, num_filled1);
+	TEST(EINVAL == errno);
 
     //Test invalid p_info
-    TEST(-EFAULT == do_syscall(NULL, 1, num_filled1));
-    TEST(-EFAULT == do_syscall(&p_info2 + sizeof(struct process_info), 1, num_filled2));
-    TEST(-EFAULT == do_syscall((struct process_info*)1LL, 1, num_filled3));
-    TEST(-EFAULT == do_syscall((struct process_info*)123456789012345689LL, 1, num_filled3));
+   	result = do_syscall(NULL, 1, num_filled1);
+	TEST(EFAULT == errno);
+    
+	result = do_syscall(&p_info2 + sizeof(struct process_info), 1, num_filled2);
+	TEST(EFAULT == errno);
+   
+	result = do_syscall((struct process_info*)1LL, 1, num_filled3);
+	TEST(EFAULT == errno);
+   
+ 	result = do_syscall((struct process_info*)123456789012345689LL, 1, num_filled3);
+	TEST(EFAULT == errno);
 
     //Test invalid num_filled
-    TEST(-EFAULT == do_syscall(&p_info1, 1, NULL));
-    TEST(-EFAULT == do_syscall(&p_info2, 1, num_filled3 + sizeof(long)));
-    TEST(-EFAULT == do_syscall(&p_info3, 1, (long*)1LL));
-    TEST(-EFAULT == do_syscall(&p_info3, 1, (long*)123456789012345689LL));
-    }
+    	result = do_syscall(&p_info1, 1, NULL);
+	TEST(EFAULT == errno);
+
+	result = do_syscall(&p_info2, 1, num_filled3 + sizeof(long));
+	TEST(EFAULT == errno);
+
+    	result = do_syscall(&p_info3, 1, (long*)1LL);
+	TEST(EFAULT == errno);
+    
+	result = do_syscall(&p_info3, 1, (long*)123456789012345689LL);
+	TEST(EFAULT == errno);
+	 }
 
 
 void test_basic()
     {
     struct process_info p_info;
-    long* num_filled;
-	TEST(0 == do_syscall(&p_info, 1, num_filled));
+    long num_filled;
+	TEST(0 == do_syscall(&p_info, 1, &num_filled));
     printf("p_info pid result: %ld  vs acutal pid: %ld\n", p_info.pid, (long)getpid());
 
     struct process_info* p_info2 = malloc(3*sizeof(struct process_info));
-    long* num_filled2;
-	TEST(0 == do_syscall(p_info2, 3, num_filled2));
+    long num_filled2;
+	TEST(0 == do_syscall(p_info2, 3, &num_filled2));
     printf("p_info pid result: %ld  vs acutal pid: %ld\n", p_info2[0].pid, (long)getpid());
     
-    if(*num_filled2 > 1)
+    if(num_filled2 > 1)
         printf("p_info parent pid result: %ld  vs acutal parent pid: %ld\n", p_info2[1].pid, (long)getppid());
 
-    if(*num_filled2 > 2)
+    if(num_filled2 > 2)
         printf("p_info 2nd parent pid result: %ld\n", p_info2[2].pid);
     }
 
