@@ -64,13 +64,13 @@ void test_error_checks()
     //Test invalid p_info
    	result = do_syscall(NULL, 1, num_filled1);
 	TEST(EFAULT == errno);
-    
+
 	result = do_syscall(&p_info2 + sizeof(struct process_info), 1, num_filled2);
 	TEST(EFAULT == errno);
-   
+
 	result = do_syscall((struct process_info*)1LL, 1, num_filled3);
 	TEST(EFAULT == errno);
-   
+
  	result = do_syscall((struct process_info*)123456789012345689LL, 1, num_filled3);
 	TEST(EFAULT == errno);
 
@@ -83,11 +83,73 @@ void test_error_checks()
 
     	result = do_syscall(&p_info3, 1, (long*)1LL);
 	TEST(EFAULT == errno);
-    
+
 	result = do_syscall(&p_info3, 1, (long*)123456789012345689LL);
 	TEST(EFAULT == errno);
 	 }
 
+void test_fork()
+	{
+	pid_t var_pid;
+	int result = 0;
+	struct process_info* p_info = malloc(3*sizeof(struct process_info));
+	long num_filled;
+
+	var_pid = fork();
+
+	if(var_pid < 0)
+		{
+		printf("Fork Failed\n");
+		}
+	else if(var_pid == 0)
+		{
+		result = do_syscall(p_info, 3, &num_filled);
+		TEST(0 == result);
+
+		printf("FORK CHILD: p_info pid result: %ld vs actual pid: %ld\n", p_info[0].pid, (long)getpid());
+		if(num_filled > 1)
+			printf("FORK CHILD: parent pid result: %ld vs actual parent pid: %ld\n", p_info[1].pid, (long)getppid());
+
+		if(num_filled > 2)
+			printf("FORK CHILD: 2nd parent pid result: %ld\n", p_info[2].pid);
+		}
+	else 
+		{
+		result = do_syscall(p_info, 2, &num_filled);
+		TEST(0 == result);
+		printf("FORK PARENT: p_info pid result: %ld vs actual pid: %ld\n", p_info[0].pid, (long)getpid());
+		if(num_filled > 1)
+			printf("FORK PARENT: parent pid result: %ld vs actual parent pid: %ld\n", p_info[1].pid, (long)getppid());
+		}
+	}
+
+void test_general_info()
+	{
+	int result = 0; 
+	struct process_info* p_info = malloc(6*sizeof(struct process_info));
+	long num_filled = 0;
+
+	result = do_syscall(p_info, 6, &num_filled);
+	TEST(0 == result);
+
+	printf("CURRENT PROCESS ID: %ld\n\n", p_info[0].pid);
+
+	//Print process information
+	if(num_filled > 3)
+		{
+		printf("Parent Parent Process Information:\n");
+		printf("pid: %ld\n", p_info[3].pid);
+		printf("name: %s\n", p_info[3].name);
+		printf("state: %ld\n", p_info[3].state);
+		printf("uid: %ld\n", p_info[3].uid);
+		printf("nvcsw: %ld\n", p_info[3].nvcsw); 
+		printf("nivcsw: %ld\n", p_info[3].nivcsw);
+		printf("num_children: %ld\n", p_info[3].num_children);
+		printf("num_siblings: %ld\n", p_info[3].num_siblings);
+		}
+
+	printf("The total number of processes returned is: %ld\n", num_filled);
+	}
 
 void test_basic()
     {
@@ -179,9 +241,11 @@ static int do_syscall(struct process_info *p_info, long size, long* num_filled)
 ********************************************************************/
 int main(int argc, char* argv[]) 
     {
-    test_error_checks();
+    //test_error_checks();
 
-    test_basic();
+//	test_fork();
+	test_general_info();
+    //test_basic();
 
 	test_print_summary();
 

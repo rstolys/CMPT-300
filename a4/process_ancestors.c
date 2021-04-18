@@ -106,7 +106,7 @@ SYSCALL_DEFINE3(process_ancestors, struct process_info*, info_array, long, size,
                     }
 
                 proc_info.num_children = num_elements;
-                    
+
                 //
                 //Determine the number of sibling processes
                 //
@@ -122,10 +122,11 @@ SYSCALL_DEFINE3(process_ancestors, struct process_info*, info_array, long, size,
                     num_elements++;
                     list_element = list_element->next;
                     }
-                
-                proc_info.num_siblings = num_elements;
-                
-                
+
+		//Remove the current process from the siblings count
+                proc_info.num_siblings = num_elements - 1;
+
+
                 //Set the process_info output for this element
                 if(0 != copy_to_user(&info_array[i], &proc_info, sizeof(struct process_info)))
                     {
@@ -139,7 +140,7 @@ SYSCALL_DEFINE3(process_ancestors, struct process_info*, info_array, long, size,
                 else { task_stct = task_stct->parent; }
 
                 //Move to next element in array
-                i++;   
+                i++;
                 }
             }
 
