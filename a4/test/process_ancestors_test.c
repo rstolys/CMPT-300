@@ -125,7 +125,7 @@ void test_fork()
 
 void test_general_info()
 	{
-	int result = 0; 
+	int result = 0;
 	struct process_info* p_info = malloc(6*sizeof(struct process_info));
 	long num_filled = 0;
 
@@ -142,7 +142,7 @@ void test_general_info()
 		printf("name: %s\n", p_info[3].name);
 		printf("state: %ld\n", p_info[3].state);
 		printf("uid: %ld\n", p_info[3].uid);
-		printf("nvcsw: %ld\n", p_info[3].nvcsw); 
+		printf("nvcsw: %ld\n", p_info[3].nvcsw);
 		printf("nivcsw: %ld\n", p_info[3].nivcsw);
 		printf("num_children: %ld\n", p_info[3].num_children);
 		printf("num_siblings: %ld\n", p_info[3].num_siblings);
@@ -162,7 +162,7 @@ void test_basic()
     long num_filled2;
 	TEST(0 == do_syscall(p_info2, 3, &num_filled2));
     printf("p_info pid result: %ld  vs acutal pid: %ld\n", p_info2[0].pid, (long)getpid());
-    
+
     if(num_filled2 > 1)
         printf("p_info parent pid result: %ld  vs acutal parent pid: %ld\n", p_info2[1].pid, (long)getppid());
 
@@ -172,7 +172,7 @@ void test_basic()
 
 
 /***********************************************************
- * Custom testing framework 
+ * Custom testing framework
  *      -- copied from array_stats_test program
  *      -- provided by professor
  ***********************************************************/
@@ -221,10 +221,10 @@ static int do_syscall(struct process_info *p_info, long size, long* num_filled)
 	int result = syscall(_PROCESS_ANCESTORS_, p_info, size, num_filled);
 	printf("..Rising to user level w/ result = %d", result);
 
-	if(result < 0) 
+	if(result < 0)
         {
 		printf(", errno = %d", (int)errno);
-	    } 
+	    }
 
 	printf("\n");
 	return result;
@@ -241,11 +241,11 @@ static int do_syscall(struct process_info *p_info, long size, long* num_filled)
 ********************************************************************/
 int main(int argc, char* argv[]) 
     {
-    //test_error_checks();
+        test_error_checks();
 
-//	test_fork();
+	test_fork();
 	test_general_info();
-    //test_basic();
+        test_basic();
 
 	test_print_summary();
 
